@@ -1,5 +1,5 @@
 TOP = ../..
-include $(TOP)/config/CONFIG_APP
+include $(TOP)/configure/CONFIG
 #ARCH = ppc604
-ARCH = mv167
-include $(TOP)/config/RULES.ioc
+TARGETS = cdCommands envPaths
+include $(TOP)/configure/RULES.ioc
