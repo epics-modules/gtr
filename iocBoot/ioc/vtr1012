@@ -1,0 +1,6 @@
+dbLoadRecords("../../db/gtr.db","name=vtr1012,card=1")
+dbLoadRecords("../../db/gtrwaveform.db","name=vtr1012,signal=0,card=1,size=8000,type=SHORT")
+dbLoadRecords("../../db/gtrwaveform.db","name=vtr1012,signal=1,card=1,size=8000,type=SHORT")
+dbLoadRecords("../../db/gtrwaveform.db","name=vtr1012,signal=2,card=1,size=8000,type=SHORT")
+dbLoadRecords("../../db/gtrwaveform.db","name=vtr1012,signal=3,card=1,size=8000,type=SHORT")
+vtr1012Config(1,0xa100,0x81000000,0x82,0x20000)
