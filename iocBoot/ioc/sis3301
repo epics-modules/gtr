@@ -7,4 +7,4 @@ dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=4,card=5,size=8000,
 dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=5,card=5,size=8000,type=SHORT")
 dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=6,card=5,size=8000,type=SHORT")
 dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=7,card=5,size=8000,type=SHORT")
-sisfadcConfig(5,80,0x91000000,0x88,3,1)
+sisfadcConfig(5,80,0x91000000,0x88,3,0)
