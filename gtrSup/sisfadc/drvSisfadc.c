@@ -821,7 +821,7 @@ int sisfadcConfig(int card,int clockSpeed,
         return(0);
     }
     if(devReadProbe(4,a32+MODID,&probeValue)!=0) {
-        printf("sisfadcConfig: no card at %#x\n",a32offset);
+        printf("sisfadcConfig: no card at %#x (local address %p)\n",a32offset,(void *)a32);
         return(0);
     }
     if((probeValue>>16) == 0x3300) {
