@@ -1,0 +1,2 @@
+registrar(drvVtr10012RegisterCommands)
+include "gtr.dbd"

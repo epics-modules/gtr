@@ -1,0 +1,9 @@
+medm -cleanup -x -macro "name=vtr10010" gtrControl.adl &
+sleep 5
+medm -attach  -x -macro "name=vtr1012" gtrControl.adl &
+medm -attach -x -macro "name=vtr10012" gtrControl.adl &
+medm -attach -x -macro "name=vtr10012_8" gtrControl.adl &
+medm -attach -x -macro "name=sis3300" gtrControl.adl &
+medm -attach -x -macro "name=sis3301" gtrControl.adl &
+medm -attach -x -macro "name=vtr8014" gtrControl.adl &
+medm -attach -x -macro "name=vtr812" gtrControl.adl &

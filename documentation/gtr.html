@@ -1,0 +1,962 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <title>GTR - Generic Transient Recorder</title>
+  <meta name="GENERATOR" content="amaya 8.6, see http://www.w3.org/Amaya/" />
+</head>
+
+<body xml:lang="en" lang="en">
+<h1 style="text-align: center">GTR - Generic Transient Recorder</h1>
+
+<h1 style="text-align: center">Release 1.3 - January 2005</h1>
+
+<h1 style="text-align: center">Marty Kraimer and Eric Norum</h1>
+
+<h2>License Agreement</h2>
+
+<p>GTR is available via the open source license described at the end of this
+document</p>
+
+<h2>Introduction</h2>
+
+<p>GTR (Generic Transient Recorder) is designed to provide support for
+transient recorders (TR). A TR which can be supported by GTR has:</p>
+<ul>
+  <li>A collection of one or more high speed ADCs all of which are controlled
+    together, i.e. share a common gate, trigger, and clock.</li>
+  <li>The TR has memory that it uses to record samples.</li>
+  <li>The ability to provide the following methods of data collection:
+    <ul>
+      <li>postTrigger
+        <p>Data sampling starts when a trigger occurs and stops when the
+        memory of the TR is full or after a configurable number of samples</p>
+      </li>
+      <li>prePostTrigger - Optional
+        <p>When the the TR is armed it begins sampling into it's local
+        memory. It uses the memory as a circular buffer. When a trigger
+        occurs it continues recording until a configurable number of
+        additional samples are taken and then stops.</p>
+      </li>
+    </ul>
+  </li>
+  <li>Device specific clock options.</li>
+  <li>Device specific options for triggers</li>
+  <li>Optional support for multiple events
+    <p>This means that when armed the TR takes multiple postTrigger ot
+    prePostTrigger samples. It will automatically rearm itself after each
+    sample and stop after all events have occured. The number of events and
+    the size of memory for each event is TR dependent. A TR may also provide
+    different event choices for postTrigger and for prePostTrigger mode.</p>
+  </li>
+</ul>
+
+<p>GTR provides the following components:</p>
+<ul>
+  <li>A generic MEDM screen for controlling a TR and a generic MEDM screen
+    for displaying the waveform.</li>
+  <li>Generic records to control and collect waveforms from a TR.</li>
+  <li>Generic device support.</li>
+  <li>A generic interface for communicating with TR drivers.</li>
+  <li>A generic driver which calls TR specific drivers.</li>
+  <li>Drivers for Joerger and Struck transient recorders.</li>
+</ul>
+
+<h2>Functionality</h2>
+
+<p>The following options can be set:</p>
+<ul>
+  <li>clock
+    <p>Options provided by TR specific driver.</p>
+  </li>
+  <li>trigger
+    <p>Options provided by TR specific driver.</p>
+  </li>
+  <li>multiEvent
+    <p>Options provided by TR specific driver.</p>
+  </li>
+  <li>preAverage
+    <p>Options provided by TR specific driver.</p>
+  </li>
+  <li>numberPTS - number of post trigger samples to take.</li>
+  <li>numberPPS - number of prePost samples, i.e. the total number of samples
+    for a prePost event.</li>
+  <li>numberPTE - number of post trigger events, i.e. number of postTrigger
+    events for a postTrigger arm request.</li>
+  <li>arm
+    <p>Options provided by TR specific driver. Typical options are</p>
+    <ul>
+      <li>disarm
+        <p>For some devices other options can not be changed unless the
+        device is disarmed.</p>
+      </li>
+      <li>postTrigger
+        <p>The device will start sampling when a trigger is received.</p>
+      </li>
+      <li>prePostTrigger
+        <p>The device will start sampling immediately into a circular buffer.
+        After a trigger an additional numberPTS samples are recorded and the
+        TR stops.</p>
+      </li>
+    </ul>
+  </li>
+  <li>autorestart
+    <p>If this is yes then, after all waveforms have been read, the device is
+    automatically rearmed.</p>
+  </li>
+</ul>
+
+<p>Device support does the following. After the recorder has acquired a
+complete set of data, a device support interrupt routine is called ( the
+underlying driver support ensures that the recorder is disarmed). The
+interrupt routine makes a callbackRequest for a routine which reads the data
+collected by the TR and issues a scanIoRequest. Thus I/O Intr scanned records
+are processed after all data has been read. This includes the waveform and
+autorestart records. The PHAS field of the autorestart record should be set
+so that it is processed after all the waveform records. If the autoReset is
+true, it rearms the recorder.</p>
+
+<h2>Hardware Specific Options</h2>
+
+<p>GTR is designed to support any hardware that implements the gtrops
+interface described below. A driver need not implement all functionality. If
+a driver can't implement a feature it can either not implement a method or
+just return gtrStatusError. Device support puts a record into alarm condition
+if a non-supported option is requested.</p>
+
+<p>A device may support features not provided by GTR. If EPICS support is
+desired for such features, it should be provided via additional device/driver
+support rather than modifying GTR.</p>
+
+<h2>GTR Components</h2>
+
+<p>The rest of this document describes the components supplied with GTR. The
+description is top down, i.e. it starts with the MEDM screens used to control
+a recorder and proceeds down to TR specific drivers. This section briefly
+describes the components:</p>
+<ul>
+  <li>gtrControl.adl and gtrWaveform.adl</li>
+  <li>gtr.db and gtrwaveform.db</li>
+  <li>GTR Device support</li>
+  <li>GTR driver support</li>
+  <li>Support for Joerger VTR1012, VTR10010, VTR10012, VTR8014, and
+  VTR812.</li>
+  <li>Support for Struck SIS3300 and SIS3301</li>
+</ul>
+
+<h2>GTR Control Screen</h2>
+
+<p>The GTR control screen is invoked via statements like:</p>
+<pre>cd &lt;gtr&gt;/gtrApp/adl
+medm -x -macro "name=mrk1012" gtrControl.adl</pre>
+
+<p>The GTR control screen gives a good description of the functionality GTR
+provides. A control element will show yellow if a non-supported option is
+requested. If a control request is made while the TR is armed and the TR
+driver does not allow changes to an armed TR, the control element will also
+show yellow.</p>
+
+<p>The following is the medm GTR control screen:</p>
+
+<p><img src="./gtrControlPost.gif" alt="gtrControlPost" /></p>
+
+<p>The first two controls are used to arm or disarm the transient recorder.
+The above display is for a vtr1012. It is armed to collect post trigger data
+and is automatically rearmed after each set of data has been put into the
+associated waveform records. It is receiving 8 triggers/second.</p>
+<ul>
+  <li>arm - The options are device specific.
+    <p>NOTE: If autorestart is no then a new arm request must be made in
+    order to arm the TR.</p>
+  </li>
+  <li>autorestart - If (no, yes) then recorder is made (inactive, active)
+    after a sample is taken and any attached waveform records have been
+    processed.</li>
+  <li>softTrigger - If trigger is set to be softTrigger then pressing this
+    control sends a softTigger request to the TR.</li>
+</ul>
+
+<p>The next five controls specify options</p>
+<ul>
+  <li>clock - The options are device specific.</li>
+  <li>trigger - The options are device specific.</li>
+  <li>multiEvent - The options are device specific. The vtr1012 doesn't
+    support this option.</li>
+  <li>numberPTS - The number of post trigger samples to record.</li>
+  <li>numberPPS - The number of pre and post trigger samples, i.e. the total
+    number of samples for a prePost event. This field is ignored for
+    postTrigger events.</li>
+  <li>numberPTE - The number of postTrigger events.</li>
+</ul>
+
+<p>waveforms is a menu that brings up a related display which shows a
+waveform for a particular channel. For example:</p>
+
+<p><img src="./gtrWaveformPost.gif" alt="gtrWaveformPost" /></p>
+
+<p>The following shows the control screen and the waveform for a postTrigger
+request but asking for four events per sample.</p>
+
+<p><img src="./gtrControlPost4Event.gif" alt="gtrControlPost4Event" /></p>
+
+<p><img src="./gtrWaveformPost4Event.gif" alt="gtrWaveformPost4Event" /></p>
+
+<p>The following shows the control screen and the waveform for a
+prePostTrigger request.</p>
+
+<p><img src="./gtrControlPrePost.gif" alt="gtrControlPrePost" /></p>
+
+<p><img src="./gtrWaveformPrePost.gif" alt="gtrWaveformPrePost" /></p>
+
+<h2>GTR sample database</h2>
+
+<p>Two database files are provided: gtr.db, and gtrwaveform.db. Each has
+macro definitions that must be instantiated when the database is loaded. For
+example the st.cmd file for testing the JoergerVTR1012 transient recorder has
+the commands:</p>
+<pre>dbLoadRecords("../../db/gtr.db","name=mrk1012,card=1")
+dbLoadRecords("../../db/gtrwaveform.db",
+    "name=mrk1012,signal=0,card=1,size=8000,type=SHORT")
+dbLoadRecords("../../db/gtrwaveform.db",
+    "name=mrk1012,signal=1,card=1,size=8000,type=SHORT")
+dbLoadRecords("../../db/gtrwaveform.db",
+    "name=mrk1012,signal=2,card=1,size=8000,type=SHORT")
+dbLoadRecords("../../db/gtrwaveform.db",
+    "name=mrk1012,signal=3,card=1,size=8000,type=SHORT")
+vtr1012Config(1,0xa100,0x81000000,0x82,0x20000)</pre>
+
+<p>The gtr.db file contains all the records used by the gtrContol.adl file.
+The gtrwavform.db file contains a template for a single waveform record.</p>
+
+<h2>GTR Device Support</h2>
+
+<p>The gtr device support has the following database definitions:</p>
+<pre>device(bo,VME_IO,devGtrBO,"GTR")
+device(mbbo,VME_IO,devGtrMBBO,"GTR")
+device(longout,VME_IO,devGtrLO,"GTR")
+device(stringin,VME_IO,devGtrSI,"GTR")
+device(waveform,VME_IO,devGtrWF,"GTR")
+driver(drvGtr)</pre>
+
+<p>Thus device support is provided for bo, mbbo, longout, stringin, and
+waveform records. For all recordtypes the DTYP must be defined as:</p>
+<pre></pre>
+<pre>field(DTYP,"GTR")</pre>
+
+<p>For bo, mbbo, and longout records the OUT field is defined as follows:</p>
+<pre>field(OUT,"#C&lt;card&gt; S0 &amp;&lt;function&gt;")</pre>
+
+<p>where card is the card (link) number of the particular recorder and S0 is
+ignored.</p>
+
+<p>For bo records function is:</p>
+<ul>
+  <li>autoRestart - Set autoRestart no or yes. Note that an autoRestart
+    record should also define
+    <pre>field(SCAN,"I/O Intr")
+field(PHAS,"1")</pre>
+  </li>
+</ul>
+<ul>
+  <li>softTrigger - Send a softTrigger request to the TR.</li>
+</ul>
+
+<p>For mbbo records function is one of the following:</p>
+<ul>
+  <li>arm</li>
+  <li>clock</li>
+  <li>trigger</li>
+  <li>multiEvent</li>
+  <li>preAverage</li>
+</ul>
+
+<p>The TR specific driver supplies the options thus do NOT define any of the
+state strings.</p>
+
+<p>For longout records function is:</p>
+<ul>
+  <li>numberPTS - Number of samples to take after a trigger occurs.</li>
+  <li>numberPPS - Number of pre and post trigger samples.</li>
+  <li>numberPTE - Number of postTrigger events taken after a postTrigger arm
+    request.</li>
+</ul>
+
+<p>For stringin records the INP field is defined as follows:</p>
+<pre>field(INP,"#C&lt;card&gt; S0 &amp;&lt;function&gt;")</pre>
+
+<p>where card is the card (link) number of the particular recorder and S0 is
+ignored.</p>
+
+<p>For stringin records function is:</p>
+<ul>
+  <li>name - The name of the associated transient driver. The name is read
+    from the driver during record initialization.</li>
+</ul>
+
+<p>For waveform records the following fields should be defined:</p>
+<pre>field(DTYP,"GTR")
+field(OUT,"#C&lt;card&gt; S&lt;signal&gt; &amp;readData")
+field(SCAN,"I/O Intr")
+field(NELM,"&lt;size&gt;")
+field(FTVL,"&lt;type&gt;")</pre>
+
+<p>where</p>
+<ul>
+  <li>card is the card (link) number of the recorder</li>
+  <li>signal is the input. TRs often use the name channel and number them
+    starting with channel 1. Signal is just (channel -1).</li>
+  <li>size is the number of elements to allocate for the array</li>
+  <li>type can be SHORT, FLOAT, or DOUBLE. Note that using type FLOAT or
+    DOUBLE can cause extra storage to be allocated. Also Channel Access may
+    limit the size of arrays that can be sent to clients.</li>
+</ul>
+
+<p>A waveform record should always be declared as I/O Intr scanned, which
+causes it to be processed after a complete set of data has been collected.
+What constitutes a complete set of data depends upon the options chosen:</p>
+<ul>
+  <li>postTrigger
+    <p>A set if numberPTS elements is collected.</p>
+  </li>
+  <li>prePostTrigger
+    <p>The complete array as specified by numberPPS is collected. The first
+    (numberPPS - numberPTS) elements are samples before the trigger and the
+    last numberPTS elements are values collected after the trigger.</p>
+  </li>
+  <li>multiEventPostTrigger - Multiple postTrigger samples are collected. The
+    number is determined by numberPTE or bu multiEvent..</li>
+  <li>multiPrePost - Multiple prePostTrigger samples. The number is
+    determined by multiEvent.</li>
+</ul>
+
+<h2>drvGTR</h2>
+
+<p>drvGtr provides an interface between device support and hardware specific
+drivers. It implements an interface that device (or other higher level code)
+calls. It also defines an interface that each hardware specific driver can
+implement and register. Thus drvGtr acts as a generic interface layer above
+hardware specific support.</p>
+
+<p>The interfaces are defind in drvGtr.h as follows:</p>
+<pre>typedef void *gtrPvt;
+typedef void (*gtrhandler)(void *pvt);
+typedef short int16;
+typedef enum {gtrStatusOK=0,gtrStatusBusy=-1,gtrStatusError=-2} gtrStatus;
+
+typedef struct gtrchannel {
+    int len; /*size of pdata array*/
+    int ndata; /*number of elements readMemory put into array*/
+    int16 *pdata;
+    int ftvl; /*type of data to which pdata points*/
+}gtrchannel;
+
+typedef struct gtrops {
+    void      (*init)(gtrPvt pvt);
+    void      (*report)(gtrPvt pvt,int level);
+    gtrStatus (*clock)(gtrPvt pvt, int value);
+    gtrStatus (*trigger)(gtrPvt pvt, int value);
+    gtrStatus (*multiEvent)(gtrPvt pvt, int value);
+    gtrStatus (*preAverage)(gtrPvt pvt, int value);
+    /*PTS PostTriggerSamples*/
+    gtrStatus (*numberPTS)(gtrPvt pvt, int value);
+    /*PPS PrePost Samples*/
+    gtrStatus (*numberPPS)(gtrPvt pvt, int value);
+    /*PTE PostTrigger Events */
+    gtrStatus (*numberPTE)(gtrPvt pvt, int value);
+    gtrStatus (*arm)(gtrPvt pvt, int type);
+    gtrStatus (*softTrigger)(gtrPvt pvt);
+    /*papgtrchannel is nchannels array of pointers to gtrchannel*/
+    gtrStatus (*readMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
+    gtrStatus (*readRawMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
+    gtrStatus (*getLimits)(gtrPvt pvt, int16 *rawLow,int16 *rawHigh);
+    gtrStatus (*registerHandler)(gtrPvt pvt,gtrhandler usrIH,void *handlerPvt);
+    int       (*numberChannels)(gtrPvt pvt);
+    int       (*numberRawChannels)(gtrPvt pvt);
+    gtrStatus (*clockChoices)(gtrPvt pvt,int *number,char ***choice);
+    gtrStatus (*armChoices)(gtrPvt pvt,int *number,char ***choice);
+    gtrStatus (*triggerChoices)(gtrPvt pvt,int *number,char ***choice);
+    gtrStatus (*multiEventChoices)(gtrPvt pvt,int *number,char ***choice);
+    gtrStatus (*preAverageChoices)(gtrPvt pvt,int *number,char ***choice);
+    gtrStatus (*name)(gtrPvt pvt,char *pname,int maxchars);
+    void      (*setUser)(gtrPvt pvt,void * userPvt);
+    void      *(*getUser)(gtrPvt pvt);
+    void      (*lock)(gtrPvt pvt);
+    void      (*unlock)(gtrPvt pvt);
+}gtrops;
+
+gtrPvt gtrFind(int card,gtrops **ppgtrops);
+
+void gtrRegisterDriver(int card,
+    const char *name,gtrops *pgtrdrvops,gtrPvt drvPvt);</pre>
+
+<p><span style="font-family: courier">gtrops</span> is the interface
+implemented by <span style="font-family: courier">drvGtr</span> and also by
+each device specific driver. Device support calls drvGtr which calls the
+device specific driver. Device support locates the interface by calling <span
+style="font-family: courier">gtrFind</span> which, if successful, sets the
+address of gtrops.</p>
+
+<p>Each TR specific driver must register itself with <span
+style="font-family: courier">drvGtr</span> by calling <span
+style="font-family: courier">gtrRegisterDriver</span>. This scheme allows
+multiple types of TRs in a single <span
+style="font-family: courier">IOC</span>.</p>
+
+<p>Many of the routines return a <span
+style="font-family: courier">gtrStatus</span>. This defined the following
+values:</p>
+<ul>
+  <li><span style="font-family: courier">gtrStatusOK</span> - The request was
+    successful.</li>
+  <li><span style="font-family: courier">gtrStatusBusy</span> - The request
+    could not be satisfied because the device is busy. This normally means
+    that the recorder is armed and a configuration request is attempted.</li>
+  <li><span style="font-family: courier">gtrStatusError</span> - The request
+    failed. If a request is made to a hardware specific driver that is not
+    supported by the hardware it can just return <span
+    style="font-family: courier">gtrStatusError</span>.</li>
+</ul>
+
+<h2>drvGtr</h2>
+
+<p>This is the driver which is called by device support. If a particular
+method is provided by the device specific driver it is called.</p>
+
+<h2>drvVtr10010</h2>
+
+<p>This provides support for the Joerger VTR10010 ttransient recorder. The
+following command must appear in a startup file before iocInit:</p>
+<pre>vtr10010Config(card,a16offset,a32offset,intVec)
+
+<span style="font-family: times">The vtr10010 provides the following options:</span></pre>
+<ul>
+  <li>clock - All the choices as described in the Joerger document both
+    internal and external.</li>
+  <li>trigger
+    <ul>
+      <li>soft - trigger happens when sotfTrigger is requested.</li>
+      <li>extTrigger - trigger is taken from external trigger input.</li>
+      <li>extGate - Sanples are taken as long as external gate is true (NOT
+        TESTED)</li>
+    </ul>
+  </li>
+  <li>arm
+    <ul>
+      <li>disarm</li>
+      <li>postTrigger</li>
+      <li>prePostTrigger</li>
+    </ul>
+  </li>
+  <li>numberPTS - number of post trigger samples taken for both postTrigger
+    and for prePostTrigger.</li>
+  <li>numberPPS - total samples taken for a prePostTrigger. Only a single
+    event is allowed.</li>
+  <li>numberPTE - Number of postTrigger events for a postTrigger arm
+  request.</li>
+</ul>
+
+<h2>drvVtr1012</h2>
+
+<p>This provides support for the Joerger VTR1012 ttransient recorder. The
+following command must appear in a startup file before iocInit:</p>
+<pre>vtr1012Config(card,a16offset,a32offset,intVec,channelArraySize)
+
+<span style="font-family: times">The vtr1012 provides the following options:</span></pre>
+<ul>
+  <li>clock - All the choices as described in the Joerger document both
+    internal and external.</li>
+  <li>trigger
+    <ul>
+      <li>soft - trigger happens when sotfTrigger is requested.</li>
+      <li>extTrigger - trigger is taken from external trigger input.</li>
+      <li>extGate - Samples are taken as long as external gate is true (NOT
+        TESTED)</li>
+    </ul>
+  </li>
+</ul>
+<ul>
+  <li>arm
+    <ul>
+      <li>disarm</li>
+      <li>postTrigger</li>
+      <li>prePostTrigger</li>
+    </ul>
+  </li>
+  <li>multiEvent - The choices allows by the Multi PRE/POST Setup register.
+    Used only for prePostTrigger requests.</li>
+  <li>numberPTS - number of post trigger samples taken for both postTrigger
+    and for prePostTrigger.</li>
+  <li>numberPPS - total samples taken for a prePostTrigger. Only a single
+    event is allowed.</li>
+  <li>numberPTE - Number of postTrigger events for a postTrigger arm
+  request.</li>
+</ul>
+
+<h2>drvVtr10012</h2>
+
+<p>This provides support for the Joerger VTR10012, VTR10012_8, and VTR8014
+recorders. The VTR10012_8 only supports single event postTrigger of 1024
+samples.</p>
+
+<p>The following command must appear in a startup file before iocInit:</p>
+<pre>vtr10012Config(card,a16offset,a32offset,intVec,intLev,useDma)
+
+<span style="font-family: times">The vtr10012 provides the following options:</span></pre>
+<ul>
+  <li>clock - All the choices as described in the Joerger document both
+    internal and external.</li>
+</ul>
+<ul>
+  <li>trigger
+    <ul>
+      <li>soft - trigger happens when sotfTrigger is requested.</li>
+      <li>extTrigger - trigger is taken from external trigger input.</li>
+      <li>extGate - Samples are taken as long as external gate is true (NOT
+        TESTED)</li>
+    </ul>
+  </li>
+  <li>arm
+    <ul>
+      <li>disarm</li>
+      <li>postTrigger</li>
+      <li>prePostTrigger</li>
+    </ul>
+  </li>
+  <li>multiEvent - The choices allows by the Multi PRE/POST Setup register.
+    Used only for prePostTrigger requests.</li>
+  <li>numberPTS - number of post trigger samples taken for both postTrigger
+    and for prePostTrigger.</li>
+  <li>numberPPS - total samples taken for a prePostTrigger. Number of events
+    determined by multiEvent.</li>
+  <li>numberPTE - Number of postTrigger events for a postTrigger arm
+  request.</li>
+</ul>
+
+<p>NOTES:</p>
+<ul>
+  <li>Currently an interrupt is generated for every event. For postTigger
+    mode with small values for numberPTS and high trigger rates this can lead
+    to a very high interrupt rate. This will remain true until the firmware
+    is changed to 1) support interrupt only at disarm, and 2) the ability to
+    have a disarm after a specified number of events.</li>
+  <li>readPostTrigger reads numberPTS*numberPTE samples rather than using the
+    location counter.</li>
+  <li>To use VME block-transfers to read the module, set the useDma parameter
+    to a non-zero value.</li>
+  <li>The vtr10012_8 requires VME block-transfer (BTR) capability. vxWorks
+    board support packages normally don't support BTR requests. Contact
+    Andrew Johnson (anj@aps.anl.gov) for BTR support for the VMEChip2 and the
+    Tundra Universe Chip under lixWorks.</li>
+</ul>
+
+<h2>drvVtr812</h2>
+
+<p>This provides support for the Joerger VTR812/10 and VTR812/40. The only
+model tested was the VTR812/10 without the multiPrePost option.</p>
+
+<p>The following command must appear in a startup file before iocInit:</p>
+<pre>vtr812Config(card,a16offset,a32offset,intVec)</pre>
+<span style="font-family: times">The vtr812 provides the following
+options:</span>
+<ul>
+  <li>clock - All the choices as described in the Joerger document both
+    internal and external.</li>
+  <li>trigger
+    <ul>
+      <li>soft - trigger happens when sotfTrigger is requested.</li>
+      <li>extTrigger - trigger is taken from external trigger input.</li>
+      <li>extGate - Samples are taken as long as external gate is true (NOT
+        TESTED)</li>
+    </ul>
+  </li>
+</ul>
+<ul>
+  <li>arm
+    <ul>
+      <li>disarm</li>
+      <li>postTrigger</li>
+      <li>prePostTrigger</li>
+    </ul>
+  </li>
+  <li>multiEvent - Only use for prePostTrigger request.
+    <p>If multiPrePost option is not available then exactly one
+    prePostTrigger event is preformed</p>
+    <p>If multiPrepost option is available this menu selects number of
+    prePostTrigger events.</p>
+  </li>
+  <li>numberPTS - number of post trigger samples taken for both postTrigger
+    and for prePostTrigger.</li>
+  <li>numberPPS - total samples taken for a prePostTrigger.</li>
+  <li>numberPTE - Number of postTrigger events for postTrigger arm
+  request.</li>
+</ul>
+
+<h2>drvSisfadc</h2>
+
+<p>This provides support for the Struck SIS3300 and SIS3301 Fast ADC. The
+following command must appear in a startup file before iocInit:</p>
+
+<p><span
+style="font-family: courier">sisfadcConfig(card,clockspeed,a32offset,intVec,intLev,useDma)</span></p>
+
+<p>NOTES:</p>
+<ul>
+  <li>The clock speed is in Megasamples per second.</li>
+  <li>To use the CPU DMA engine to read the module, set the useDma parameter
+    to a non-zero value.</li>
+</ul>
+
+<p>The following options are supported:</p>
+<ul>
+  <li>clock - All the choices described in the struck manual.</li>
+  <li>trigger
+    <ul>
+      <li>soft - trigger happens when sotfTrigger is requested.</li>
+      <li>FP start/stop - Front Panel start/stop. For postTrigger operation
+        the trigger signal should be connected to the start input (input
+        number 3) and the start output (output number 2) should be externally
+        jumpered to the stop input (input number 2). For prePostTrigger
+        operation the trigger signal should be connected to the stop
+      input.</li>
+      <li>P2 start/stop (Not tested) - P2 Start/stop</li>
+      <li>FP gate - Front Panel Gate-Chaining mode. This mode supports
+        postTrigger mode only.</li>
+    </ul>
+  </li>
+  <li>multiEvent - All the choices provided by the sisfadc. The amount of
+    memory for each event is also determined by the choice. This is used for
+    both postTrigger and prePostTrigger requests.</li>
+  <li>preAverage - All the choices provided by the sisfadc.</li>
+  <li>arm
+    <ul>
+      <li>disarm</li>
+      <li>postTrigger</li>
+      <li>prePostTrigger</li>
+    </ul>
+  </li>
+  <li>numberPTS - number of post trigger samples for both postTrigger and
+    prePostTrigger.</li>
+  <li>numberPPS - total samples taken for a prePostTrigger.</li>
+  <li>numberPTE - (gate-chaining mode only) number of front-panel gate events
+    recorded.</li>
+</ul>
+
+<p>Testing was done as follows</p>
+<ul>
+  <li>postTrigger - An external trigger was input to the front panel start
+    input and the front panel start output was jumpered to the front panel
+    stop input.
+    <p>When postTrigger arm is selected, then the number of triggers as
+    selected by multiEvent are selected. Each time a trigger arrives the data
+    is stored in the next event memory. After numberPTS samples are
+    collected, the sisfadc stops, advances the event counter, and waits for
+    the next trigger. After all the triggers have been received, numberPTS
+    samples for each trigger are read from the sisfadc.</p>
+  </li>
+  <li>prePostTrigger - An external trigger was input to the front panel stop
+    input.
+    <p>When prePostTrigger is selected data collection is started immediately
+    using the first event memory as a circular buffer. When the stop trigger
+    arrives, and additional numberPTS signals are accepted. The sisadc then
+    advances the event counter, starts sampling into the new event memory,
+    etc. After all triggers have been processed, data is read from the
+    sisfac. All elements of each event memory are read.</p>
+  </li>
+  <li>FP gate - An external trigger was input to the front panel start input.
+    <p>When postTrigger is selected data collection begins when the trigger
+    signal goes active and continues for numberPTS samples after the trigger
+    signal goes inactive. When numberPTE trigger signals have occurred all
+    data samples are read.</p>
+  </li>
+</ul>
+
+<p>If the one wire ID register option is present the clock speed and serial
+number are made part of the name.</p>
+
+<h2>Implementing a TR specific driver</h2>
+
+<p>As mentioned above a TR specific driver must:</p>
+<ul>
+  <li>Implement the gtrops interface</li>
+  <li>Provide a configuration interface that does the following:
+    <ul>
+      <li>provide a argument that specifies the card.</li>
+      <li>Call gtrRegisterDriver.</li>
+      <li>Accept other configuration information such as vme addresse,
+      etc.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Look at an existing TR specific drivers for an example.</p>
+
+<p>The methods provided by gtrops are:</p>
+
+<table border="1">
+  <caption></caption>
+  <tbody>
+    <tr>
+      <td>init</td>
+      <td>EPICS calls this during driver initialization.</td>
+    </tr>
+    <tr>
+      <td>report</td>
+      <td>EPICS calls this when a dbior request is issued.</td>
+    </tr>
+    <tr>
+      <td>clock</td>
+      <td>This is called when clock options are being changed. The TR driver
+        determines the options by implementing clockChoices below.</td>
+    </tr>
+    <tr>
+      <td>trigger</td>
+      <td>This is called when trigger options are being changed. The TR
+        driver determines the options by implementing triggerChoices
+      below.</td>
+    </tr>
+    <tr>
+      <td>multiEvent</td>
+      <td>This is called when multiEvent options are being changed. The TR
+        driver determines the options by implementing multiEventChoices
+        below. If the TR doesn't support multiple events this method should
+        not be implemented..</td>
+    </tr>
+    <tr>
+      <td>preAverage</td>
+      <td>This is called when preAverage options are being changed. The TR
+        driver determines the options by implementing preAverageChoices
+        below. If the TR doesn't support multiple events this method should
+        not be implemented..</td>
+    </tr>
+    <tr>
+      <td>numberPTS</td>
+      <td>The number of post trigger samples. If the user requests more
+        samples than the TR can accept, it should return gtrStatusError.</td>
+    </tr>
+    <tr>
+      <td>numberPPS</td>
+      <td>PrePost samples. For prePostTrigger arm requests this the the total
+        number of samples that will be returned for each event.</td>
+    </tr>
+    <tr>
+      <td>numberPTE</td>
+      <td>Number of postTrigger events. This is only used if the TR can
+        support a different number of events for postTrigger and
+        prePostTrigger.</td>
+    </tr>
+    <tr>
+      <td>arm</td>
+      <td>This is called when arm options are being changed. The TR driver
+        determines the options by implementing armChoices below. A TR should
+        always provide disarm and postTrigger as the first two choices and
+        prePostTrigger as the third choice if it can provide this capibility.
+        If the caller selects disarm the TR must disarm itself even if
+        active. If postTrigger or prePostTrigger is selected it must start
+        the requested operation.</td>
+    </tr>
+    <tr>
+      <td>softTrigger</td>
+      <td>Issue a softTrigger.</td>
+    </tr>
+    <tr>
+      <td>readMemory</td>
+      <td>Read the data collected during the last data acquisition cycle. See
+        below for details.</td>
+    </tr>
+    <tr>
+      <td>readRawMemory</td>
+      <td>Read the data collected during the last data acquisition cycle and
+        store in device-dependent raw format. See below for details.</td>
+    </tr>
+    <tr>
+      <td>getLimits</td>
+      <td>Get the raw limits for the adc readings.</td>
+    </tr>
+    <tr>
+      <td>registerHandler</td>
+      <td>This registers the users interrupt handler which is called when
+        data acquisition is complete. The handler can be called from
+        interrupt level.</td>
+    </tr>
+    <tr>
+      <td>numberChannels</td>
+      <td>Returns the number of channels that the TR provides.</td>
+    </tr>
+    <tr>
+      <td>numberRawChannels</td>
+      <td>Returns the number of channels that the TR provides in its
+        device-dependent raw format.</td>
+    </tr>
+    <tr>
+      <td>clockChoices</td>
+      <td>Sets the clock choices. See below for how to specify choices.</td>
+    </tr>
+    <tr>
+      <td>armChoices</td>
+      <td>Sets the arm choices. See below for how to specify choices</td>
+    </tr>
+    <tr>
+      <td>triggerChoices</td>
+      <td>Sets the trigger choices. See below for how to specify choices.</td>
+    </tr>
+    <tr>
+      <td>multiEventChoices</td>
+      <td>Sets the multiEvent choices. See below for how to specify
+      choices.</td>
+    </tr>
+    <tr>
+      <td>preAverageChoices</td>
+      <td>Sets the preAverage choices. See below for how to specify
+      choices.</td>
+    </tr>
+    <tr>
+      <td>name</td>
+      <td>Returns a name for the TR.</td>
+    </tr>
+    <tr>
+      <td>setUser</td>
+      <td>Implemented by drvGtr. It should not be implemented or called by a
+        TR specific driver.</td>
+    </tr>
+    <tr>
+      <td>getUser</td>
+      <td>Implemented by drvGtr. It should not be implemented or called by a
+        TR specific driver.</td>
+    </tr>
+    <tr>
+      <td>lock</td>
+      <td>Implemented by drvGtr. A TR specific driver can call it if it is
+        performing an operation that it doesn't want interrupted.</td>
+    </tr>
+    <tr>
+      <td>unlock</td>
+      <td>Implemented by drvGtr. A TR specific driver can call it if it is
+        performing an operation that it doesn't want interrupted.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Specifying choices</h3>
+
+<p>A device specific driver can implement methods that supply choices for
+clock, arm, etc. In each case the method sets the number of choices and an
+array of pointers to character strings specifying the choices. Since devGtr
+calls these methods during mbbo record initialization, the number of choices
+should be at most 16 and the maximum string length should be 15 and should be
+terminated with a null character. An example definition is:</p>
+<pre>#define nclockChoices 14
+static char *clockChoices[nclockChoices] = {
+    "100 MHz","50 MHz","25 MHz","10 MHz",
+    "5 MHz","2.5 MHz","1 MHz",
+    "Ext","Ext/2","Ext/4","Ext/10",
+    "Ext/20","Ext/40","Ext/100",
+};
+...
+STATIC gtrStatus vtrclockChoices(gtrPvt pvt,int *number,char ***choice)
+{
+    *number = nclockChoices;
+    *choice = clockChoices;
+    return(gtrStatusOK);
+}</pre>
+
+<h3>Reading data</h3>
+
+<p>The device specific driver is responsible for reading data from the device
+into an array of <span style="font-family: courier">gtrchannel</span>s, which
+has the following definition:</p>
+<pre>typedef struct gtrchannel {
+    int    len;   /*size of pdata array*/
+    int    ndata; /*number of elements readMemory put into array*/
+    int16 *pdata;
+    int    ftvl;  /*menuFtypeXXXX of buffer to which pdata points*/
+}gtrchannel;</pre>
+
+<p>The caller, e.g. devGtr, is resonsible for:</p>
+<ul>
+  <li>Allocating an array of <span
+    style="font-family: courier">gtrchannel</span>s. The number of elements
+    in the array is determined by calling the <span
+    style="font-family: courier">numberChannels</span> or <span
+    style="font-family: courier">numberRawChannels</span> method.</li>
+  <li>For each <span style="font-family: courier">gtrchannel</span> setting
+    <span style="font-family: courier">len</span> and <span
+    style="font-family: courier">pdata</span>. It is permissible to set <span
+    style="font-family: courier">len</span> and <span
+    style="font-family: courier">pdata</span> to zero.</li>
+</ul>
+
+<p>When the readMemory or readRawMemory method is called it expected to put
+data into the array specified by pdata and set ndata equal to the number of
+elements it put into pdata. It must not overrun the array, i.e. it must not
+put more than len elements into the array. It must honor the numberPTS and
+numberPPS fields. It may check the ftvl field to ensure that the receiver is
+of the correct data type.</p>
+
+<h2>License Agreement</h2>
+<pre>Copyright (c) 2002 University of Chicago. All rights reserved.
+
+GTR is distributed subject to the following license conditions:
+
+ SOFTWARE LICENSE AGREEMENT
+ Software: GTR
+
+ 1. The "Software", below, refers to GTR (in either source code, or
+    binary form and accompanying documentation). Each licensee is
+    addressed as "you" or "Licensee."
+
+ 2. The copyright holders shown above and their third-party licensors
+    hereby grant Licensee a royalty-free nonexclusive license, subject to
+    the limitations stated herein and U.S. Government license rights.
+
+ 3. You may modify and make a copy or copies of the Software for use
+    within your organization, if you meet the following conditions:
+      a. Copies in source code must include the copyright notice and this
+         Software License Agreement.
+      b. Copies in binary form must include the copyright notice and this
+         Software License Agreement in the documentation and/or other
+         materials provided with the copy.
+
+ 4. You may modify a copy or copies of the Software or any portion of it,
+    thus forming a work based on the Software, and distribute copies of
+    such work outside your organization, if you meet all of the following
+    conditions:
+      a. Copies in source code must include the copyright notice and this
+         Software License Agreement;
+      b. Copies in binary form must include the copyright notice and this
+         Software License Agreement in the documentation and/or other
+         materials provided with the copy;
+      c. Modified copies and works based on the Software must carry
+         prominent notices stating that you changed specified portions of
+         the Software.
+
+ 5. Portions of the Software resulted from work developed under a U.S.
+    Government contract and are subject to the following license: the
+    Government is granted for itself and others acting on its behalf a
+    paid-up, nonexclusive, irrevocable worldwide license in this computer
+    software to reproduce, prepare derivative works, and perform publicly
+    and display publicly.
+
+ 6. WARRANTY DISCLAIMER. THE SOFTWARE IS SUPPLIED "AS IS" WITHOUT WARRANTY
+    OF ANY KIND. THE COPYRIGHT HOLDERS, THEIR THIRD PARTY LICENSORS, THE
+    UNITED STATES, THE UNITED STATES DEPARTMENT OF ENERGY, AND THEIR
+    EMPLOYEES: (1) DISCLAIM ANY WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+    BUT NOT LIMITED TO ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS
+    FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT, (2) DO NOT ASSUME
+    ANY LEGAL LIABILITY OR RESPONSIBILITY FOR THE ACCURACY, COMPLETENESS,
+    OR USEFULNESS OF THE SOFTWARE, (3) DO NOT REPRESENT THAT USE OF THE
+    SOFTWARE WOULD NOT INFRINGE PRIVATELY OWNED RIGHTS, (4) DO NOT WARRANT
+    THAT THE SOFTWARE WILL FUNCTION UNINTERRUPTED, THAT IT IS ERROR-FREE
+    OR THAT ANY ERRORS WILL BE CORRECTED.
+
+ 7. LIMITATION OF LIABILITY. IN NO EVENT WILL THE COPYRIGHT HOLDERS, THEIR
+    THIRD PARTY LICENSORS, THE UNITED STATES, THE UNITED STATES DEPARTMENT
+    OF ENERGY, OR THEIR EMPLOYEES: BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+    CONSEQUENTIAL, SPECIAL OR PUNITIVE DAMAGES OF ANY KIND OR NATURE,
+    INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS OR LOSS OF DATA, FOR ANY
+    REASON WHATSOEVER, WHETHER SUCH LIABILITY IS ASSERTED ON THE BASIS OF
+    CONTRACT, TORT (INCLUDING NEGLIGENCE OR STRICT LIABILITY), OR
+    OTHERWISE, EVEN IF ANY OF SAID PARTIES HAS BEEN WARNED OF THE
+    POSSIBILITY OF SUCH LOSS OR DAMAGES.</pre>
+</body>
+</html>

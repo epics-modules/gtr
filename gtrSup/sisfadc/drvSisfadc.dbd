@@ -1,0 +1,2 @@
+registrar(drvSISfadcRegisterCommands)
+include "gtr.dbd"

@@ -1,0 +1,81 @@
+record(stringin,"$(name)name")
+{
+    field(DTYP,"GTR")
+    field(INP,"#C$(card) S0@name")
+}
+record(mbbo,"$(name)arm")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@arm")
+}
+record(mbbo,"$(name)clock")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@clock")
+}
+record(mbbo,"$(name)trigger")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@trigger")
+}
+record(mbbo,"$(name)multiEvent")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@multiEvent")
+}
+record(mbbo,"$(name)preAverage")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@preAverage")
+}
+record(longout,"$(name)numberPTS")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@numberPTS")
+}
+record(longout,"$(name)numberPPS")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@numberPPS")
+}
+record(longout,"$(name)numberPTE")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@numberPTE")
+}
+record(bo,"$(name)softTrigger")
+{
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@softTrigger")
+}
+record(bo,"$(name)autoRestart")
+{
+    field(SCAN,"I/O Intr")
+    field(PHAS,"1")
+    field(DTYP,"GTR")
+    field(OUT,"#C$(card) S0@autoRestart")
+    field(ZNAM,"no")
+    field(ONAM,"yes")
+    field(FLNK,"$(name)counter")
+}
+record(calc,"$(name)counter")
+{
+    field(CALC,"A+1")
+    field(INPA,"$(name)counter")
+}
+record(ai,"$(name)everySecond")
+{
+    field(SCAN,"1 second")
+    field(FLNK,"$(name)perSecond")
+}
+record(calc,"$(name)perSecond")
+{
+    field(CALC,"A")
+    field(INPA,"$(name)counter")
+    field(FLNK,"$(name)reset")
+}
+record(ao,"$(name)reset")
+{
+    field(VAL,"0")
+    field(OUT,"$(name)counter NPP NMS")
+}

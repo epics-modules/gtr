@@ -1,0 +1,6 @@
+device(bo,VME_IO,devGtrBO,"GTR")
+device(mbbo,VME_IO,devGtrMBBO,"GTR")
+device(longout,VME_IO,devGtrLO,"GTR")
+device(stringin,VME_IO,devGtrSI,"GTR")
+device(waveform,VME_IO,devGtrWF,"GTR")
+driver(drvGtr)

@@ -1,0 +1,3 @@
+Till Straumann's <strauman@slac.stanford.edu> DMA support routines
+for Motorola PowerPC VME cards.  These routines work with both vxWorks
+and RTEMS.

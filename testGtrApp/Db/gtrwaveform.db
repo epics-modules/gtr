@@ -1,0 +1,8 @@
+record(waveform,"$(name)waveform$(signal)")
+{
+    field(DTYP,"GTR")
+    field(INP,"#C$(card) S$(signal) @readData")
+    field(SCAN,"I/O Intr")
+    field(NELM,"$(size)")
+    field(FTVL,"$(type)")
+}
