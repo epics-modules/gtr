@@ -6,8 +6,8 @@ all: gtr.pdf knownProblems.pdf releaseNotes.pdf
 %.pdf: %.html
 	-htmldoc $(NOTE_HTMLFLAGS) --outfile $@ $<
 
-gtr.pdf:
-	-htmldoc $(BOOK_HTMLFLAGS) --outfile gtr.pdf gtr.html
+gtr.pdf: gtr.html
+	-htmldoc $(BOOK_HTMLFLAGS) --outfile $@ $<
 
 clean:
 
