@@ -228,7 +228,7 @@ STATIC void vtrinit(gtrPvt pvt)
     writeRegister(pvtrInfo,CSR1BYTE0,pvtrInfo->csr1byte0);
     writeRegister(pvtrInfo,CSR1BYTE1,pvtrInfo->csr1byte1);
     writeRegister(pvtrInfo,IACKBYTE,pvtrInfo->intVec);
-    status = devEnableInterruptLevel(intVME,pvtrInfo->intLev);
+    status = devEnableInterruptLevelVME(pvtrInfo->intLev);
     if(status) {
         errMessage(status,"vtrinit devEnableInterruptLevel failed\n");
     }
@@ -556,7 +556,7 @@ int vtr10010Config(int card,int a16offset,unsigned int a32offset,int intVec)
     }
     pvtrInfo->a32 = a32;
     pvtrInfo->channel = (int16 *)pvtrInfo->a32;
-    status = devConnectInterrupt(intVME,pvtrInfo->intVec,
+    status = devConnectInterruptVME(pvtrInfo->intVec,
         vtr10010IH,(void *)pvtrInfo);
     if(status) {
         errMessage(status,"vtrConfig devConnectInterrupt failed\n");

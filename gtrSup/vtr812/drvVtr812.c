@@ -287,13 +287,13 @@ STATIC void vtrinit(gtrPvt pvt)
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
     long status;
     
-    status = devConnectInterrupt(intVME,pvtrInfo->intVec,
+    status = devConnectInterruptVME(pvtrInfo->intVec,
         vtr812IH,(void *)pvtrInfo);
     if(status) {
         errMessage(status,"vtrConfig devConnectInterrupt failed\n");
         return;
     }
-    status = devEnableInterruptLevel(intVME,pvtrInfo->intLev);
+    status = devEnableInterruptLevelVME(pvtrInfo->intLev);
     if(status) {
         errMessage(status,"init devEnableInterruptLevel failed\n");
     }

@@ -237,7 +237,7 @@ STATIC void vtrinit(gtrPvt pvt)
     writeLocationRegister(pvtrInfo,0);
     /*Initialize to 1024 words. No good reason for this value*/
     writeGateRegister(pvtrInfo,1024);
-    status = devEnableInterruptLevel(intVME,pvtrInfo->intLev);
+    status = devEnableInterruptLevelVME(pvtrInfo->intLev);
     if(status) {
         errMessage(status,"vtrinit devEnableInterruptLevel failed\n");
     }
@@ -569,7 +569,7 @@ int vtr1012Config(int card,int a16offset,unsigned int a32offset,int intVec,
     pvtrInfo->a32offset = a32offset;
     pvtrInfo->intVec = intVec;
     pvtrInfo->numberPTE = 1;
-    status = devConnectInterrupt(intVME,pvtrInfo->intVec,
+    status = devConnectInterruptVME(pvtrInfo->intVec,
         vtr1012IH,(void *)pvtrInfo);
     if(status) {
         errMessage(status,"vtrConfig devConnectInterrupt failed\n");

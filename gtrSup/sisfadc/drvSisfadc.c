@@ -335,13 +335,13 @@ STATIC void sisinit(gtrPvt pvt)
     sisInfo *psisInfo = (sisInfo *)pvt;
     long status;
     
-    status = devConnectInterrupt(intVME,psisInfo->intVec,
+    status = devConnectInterruptVME(psisInfo->intVec,
         sisIH,(void *)psisInfo);
     if(status) {
         errMessage(status,"init devConnectInterrupt failed\n");
         return;
     }
-    status = devEnableInterruptLevel(intVME,psisInfo->intLev);
+    status = devEnableInterruptLevelVME(psisInfo->intLev);
     if(status) {
         errMessage(status,"init devEnableInterruptLevel failed\n");
     }
