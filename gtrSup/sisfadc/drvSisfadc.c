@@ -20,11 +20,6 @@
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
 #include <epicsExport.h>
-#ifdef __rtems__
-# include <bsp/VME.h>
-#else
-# include <vme.h>
-#endif
 
 #include "ellLib.h"
 #include "errlog.h"
@@ -248,8 +243,10 @@ static void initialize()
    rebootHookAdd(sisReboot);
 }
 
-void sisIH(sisInfo *psisInfo)
+void sisIH(void *arg)
 {
+    sisInfo *psisInfo = (sisInfo *)arg;
+
     writeRegister(psisInfo,ACQCSR,0x000f0000);
     writeRegister(psisInfo,INTCONTROL,0x00ff0000);
     if(isRebooting) return;

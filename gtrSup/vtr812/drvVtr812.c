@@ -19,11 +19,6 @@
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
 #include <epicsExport.h>
-#ifdef __rtems__
-# include <bsp/VME.h>
-#else
-# include <vme.h>
-#endif
 
 /*Following needed for block transfer requests*/
 #include <epicsDma.h>
@@ -263,8 +258,10 @@ static void initialize()
     rebootHookAdd(vtrReboot);
 }
 
-void vtr812IH(vtrInfo *pvtrInfo)
+void vtr812IH(void *arg)
 {
+    vtrInfo *pvtrInfo = (vtrInfo *)arg;
+
     /*DONT use readRegister or writeRegister in interrupt handler*/
     if(isRebooting || (pvtrInfo->arm == armDisarm)) {
         *(uint8 *)(pvtrInfo->a16+Disarm) = 1;

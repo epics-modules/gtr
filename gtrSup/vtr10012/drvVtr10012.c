@@ -19,11 +19,6 @@
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
 #include <epicsExport.h>
-#ifdef __rtems__
-# include <bsp/VME.h>
-#else
-# include <vme.h>
-#endif
 
 /*Following needed for block transfer requests*/
 #include <menuFtype.h>
@@ -256,8 +251,9 @@ static void initialize()
     rebootHookAdd(vtrReboot);
 }
 
-void vtr10012IH(vtrInfo *pvtrInfo)
+void vtr10012IH(void *arg)
 {
+    vtrInfo *pvtrInfo = (vtrInfo *)arg;
 
     if(isRebooting || (pvtrInfo->arm == armDisarm)) {
         writeRegister(pvtrInfo,DISARM,1); 

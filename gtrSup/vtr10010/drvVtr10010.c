@@ -18,11 +18,6 @@
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
 #include <epicsExport.h>
-#ifdef __rtems__
-# include <bsp/VME.h>
-#else
-# include <vme.h>
-#endif
 
 #include "ellLib.h"
 #include "errlog.h"
@@ -198,8 +193,10 @@ static void vtrinitialize()
     rebootHookAdd(vtrReboot);
 }
 
-void vtr10010IH(vtrInfo *pvtrInfo)
+void vtr10010IH(void *arg)
 {
+    vtrInfo *pvtrInfo = (vtrInfo *)arg;
+
     if(isRebooting) return;
     switch(pvtrInfo->arm) {
     case armDisable:
