@@ -610,10 +610,10 @@ samples.</p>
     location counter.</li>
   <li>To use VME block-transfers to read the module, set the useDma parameter
     to a non-zero value.</li>
-  <li>The vtr10012_8 requires VME block-transfer (BTR) capability. vxWorks
+  <li>The vtr10012_8 requires VME block transfer (BTR) capability. vxWorks
     board support packages normally don't support BTR requests. Contact
     Andrew Johnson (anj@aps.anl.gov) for BTR support for the VMEChip2 and the
-    Tundra Universe Chip under lixWorks.</li>
+    Tundra Universe Chip under vxWorks.</li>
 </ul>
 
 <h2>drvVtr812</h2>
@@ -737,8 +737,9 @@ style="font-family: courier">sisfadcConfig(card,clockspeed,a32offset,intVec,intL
   </li>
 </ul>
 
-<p>If the one wire ID register option is present the clock speed and serial
-number are made part of the name.</p>
+<p>If the one wire ID register option is present the TR name is
+formed by appending the clock speed and serial number
+to the base device (e.g. sis3301-80 SN 1478).</p>
 
 <h2>Implementing a TR specific driver</h2>
 
