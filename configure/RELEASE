@@ -12,4 +12,4 @@
 #SNCSEQ=_SNCSEQ_
 
 # EPICS_BASE usually appears last so other apps can preempt definitions
-EPICS_BASE=/home/phoebus/NORUME/src/EPICS/base_R3_14_2_branch
+EPICS_BASE=/usr/local/iocapps/R3.14.7/base/3-14-7-asd1
