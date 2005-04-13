@@ -7,13 +7,13 @@ dbLoadDatabase("dbd/testGtr.dbd")
 testGtr_registerRecordDeviceDriver(pdbbase) 
 
 cd ${TOP}/iocBoot/${IOC}
-< vtr10010
-< vtr1012
-< vtr10012
-< vtr10012_8
-< vtr8014
-< vtr812
-< sis3300
+#< vtr10010
+#< vtr1012
+#< vtr10012
+#< vtr10012_8
+#< vtr8014
+#< vtr812
+#< sis3300
 < sis3301
 
 iocInit()

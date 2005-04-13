@@ -17,6 +17,7 @@
 
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
+#include <epicsExit.h>
 #include <epicsExport.h>
 
 #include "ellLib.h"
@@ -170,7 +171,7 @@ static gtrStatus vrtenablebyte0(gtrPvt pvt,uint8 mask,int value)
     return(gtrStatusOK);
 }
 
-static int vtrReboot(int boot_type)
+static void vtrReboot(void *arg)
 {
     vtrInfo  *pvtrInfo;
 
@@ -181,7 +182,6 @@ static int vtrReboot(int boot_type)
         pvtrInfo = (vtrInfo *)ellNext(&pvtrInfo->node);
     }
     vtrIsInited = 0;
-    return(0);
 }
     
 static void vtrinitialize()
@@ -190,7 +190,7 @@ static void vtrinitialize()
     vtrIsInited=1;
     isRebooting = 0;
     ellInit(&vtrList);
-    rebootHookAdd(vtrReboot);
+    epicsAtExit(vtrReboot,NULL);
 }
 
 void vtr10010IH(void *arg)

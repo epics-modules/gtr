@@ -17,7 +17,9 @@ INC += drvUniverseDma.h
 
 LIBRARY_RTEMS += drvUniverseDma
 
-drvUniverseDma_SRCS += drvUniverseDma.c
+SRCS_RTEMS-mvme5500 += drvUniverseDma.c
+SRCS_vxWorks        += drvUniverseDma.c
+SRCS += $(SRCS_$(T_A))
 
 
 include $(TOP)/configure/RULES

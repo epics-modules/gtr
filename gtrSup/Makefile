@@ -20,7 +20,8 @@ gtr_LIBS += $(EPICS_BASE_IOC_LIBS)
 SRC_DIRS += $(GTRSUP)/gtr
 INC += drvGtr.h
 INC += epicsDma.h
-VME_ONLY_SRCS += devGtr.c drvGtr.c epicsDma.c 
+SRCS += devGtr.c drvGtr.c
+VME_ONLY_SRCS += epicsDma.c 
 DBD += gtr.dbd
 
 SRC_DIRS += $(GTRSUP)/sisfadc

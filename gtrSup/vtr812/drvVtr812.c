@@ -18,6 +18,7 @@
 
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
+#include <epicsExit.h>
 #include <epicsExport.h>
 
 /*Following needed for block transfer requests*/
@@ -235,7 +236,7 @@ static uint32 readPmemAddress(vtrInfo *pvtrInfo)
     return(value);
 }
 
-static int vtrReboot(int boot_type)
+static void vtrReboot(void *arg)
 {
     vtrInfo  *pvtrInfo;
 
@@ -246,7 +247,6 @@ static int vtrReboot(int boot_type)
         pvtrInfo = (vtrInfo *)ellNext(&pvtrInfo->node);
     }
     vtrIsInited = 0;
-    return(0);
 }
     
 static void initialize()
@@ -255,7 +255,7 @@ static void initialize()
     vtrIsInited=1;
     isRebooting = 0;
     ellInit(&vtrList);
-    rebootHookAdd(vtrReboot);
+    epicsAtExit(vtrReboot,NULL);
 }
 
 void vtr812IH(void *arg)

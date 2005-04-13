@@ -19,6 +19,7 @@
 #include <epicsDma.h>
 #include <epicsInterrupt.h>
 #include <epicsThread.h>
+#include <epicsExit.h>
 #include <epicsExport.h>
 
 #include "ellLib.h"
@@ -221,7 +222,7 @@ static uint32 readRegister(sisInfo *psisInfo, int offset)
     return(value);
 }
 
-static int sisReboot(int boot_type)
+static void sisReboot(void *arg)
 {
     sisInfo  *psisInfo;
 
@@ -231,7 +232,6 @@ static int sisReboot(int boot_type)
         writeRegister(psisInfo,RESET,1);
         psisInfo = (sisInfo *)ellNext(&psisInfo->node);
     }
-    return(0);
 }
     
 static void initialize()
@@ -240,7 +240,7 @@ static void initialize()
     sisIsInited=1;
     isRebooting = 0;
     ellInit(&sisList);
-   rebootHookAdd(sisReboot);
+   epicsAtExit(sisReboot,NULL);
 }
 
 void sisIH(void *arg)
@@ -822,6 +822,8 @@ int sisfadcConfig(int card,int clockSpeed,
     }
     if(devReadProbe(4,a32+MODID,&probeValue)!=0) {
         printf("sisfadcConfig: no card at %#x (local address %p)\n",a32offset,(void *)a32);
+printf("sisType probeValue %8.8x\n",probeValue);
+while (devReadProbe(4,a32+MODID,&probeValue)!=0);
         return(0);
     }
     if((probeValue>>16) == 0x3300) {
