@@ -542,10 +542,6 @@ static long waveform_init_record(dbCommon *precord)
     default:           return(S_db_badField);
     }
     switch(ftvl) {
-    case menuFtypeLONG:
-        if(pdpvt->parm == readRawData)
-            break;
-        /* Fall through to default */
     default:
         status = S_db_badField;
         recGblRecordError(status,(void *)precord,
@@ -553,6 +549,9 @@ static long waveform_init_record(dbCommon *precord)
         pwaveformRecord->pact = 1;
         return(status);
     
+    case menuFtypeLONG: /* Limits must come from database */
+            break;
+
     case menuFtypeSHORT: {
         short rawLow,rawHigh;
         (*pgtrops->getLimits)(gtrpvt,&rawLow,&rawHigh);
