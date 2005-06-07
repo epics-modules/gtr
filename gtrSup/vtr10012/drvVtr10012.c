@@ -66,12 +66,12 @@ typedef unsigned short uint16;
 
 int vtr10012Debug=2;
 
-typedef enum {vtrType10012,vtrType10012_8,vtrType8014} vtrType;
-#define vtrNTypes vtrType8014 + 1
+typedef enum {vtrType10012,vtrType10012_8,vtrType8014,vtrType10014} vtrType;
+#define vtrNTypes vtrType10014 + 1
 static const char *vtrname[vtrNTypes] = {
-    "VTR10012","VTR10012_8","VTR8014"
+    "VTR10012","VTR10012_8","VTR8014","VTR10014"
 };
-static int16 dataMask[vtrNTypes] = {0x0fff,0x0fff,0x3fff};
+static int16 dataMask[vtrNTypes] = {0x0fff,0x0fff,0x3fff,0x3fff};
 
 #define nclockChoices10012 14
 static char *clockChoices10012[nclockChoices10012] = {
@@ -97,14 +97,25 @@ static uint16 clockValue8014[nclockChoices8014] = {
     0x0008, 0x0009
 };
 
+#define nclockChoices10014 4
+static char *clockChoices10014[nclockChoices10014] = {
+    "100 MHz","50 MHz",
+    "Ext","Ext/2"
+};
+static uint16 clockValue10014[nclockChoices10014] = {
+    0x0000, 0x0001,
+    0x0008, 0x0009
+};
+
+
 static int nclockChoices[vtrNTypes] = {
-    nclockChoices10012,nclockChoices10012,nclockChoices8014
+    nclockChoices10012,nclockChoices10012,nclockChoices8014,nclockChoices10014
 };
 static char **clockChoices[vtrNTypes] = {
-    clockChoices10012, clockChoices10012, clockChoices8014
+    clockChoices10012, clockChoices10012, clockChoices8014,clockChoices10014
 };
 static uint16 *clockValue[vtrNTypes] = {
-    clockValue10012, clockValue10012, clockValue8014
+    clockValue10012, clockValue10012, clockValue8014, clockValue10014
 };
 
 typedef enum {triggerSoft,triggerExt,triggerGate} triggerType;
@@ -777,6 +788,8 @@ int vtr10012Config(int card,
         }
     } else if(probeValue==9) {
         type = vtrType8014;
+    } else if(probeValue==10) {
+        type = vtrType10014;
     } else {
         printf("ID %x not vtrType10012 or vtrType10012_8 or vtrType8014\n",probeValue);
         return(0);
