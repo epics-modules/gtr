@@ -60,8 +60,6 @@ typedef unsigned short uint16;
 #define CPTCC      0x32
 #define TCOUNTER   0x34
 
-#define ARRAYSIZE 256*1024 /*sample array size for VTR10012*/
-#define ARRAYBYTES ARRAYSIZE*sizeof(uint32)
 #define BUFLEN 2048
 
 int vtr10012Debug=2;
@@ -146,6 +144,8 @@ typedef struct vtrInfo {
     epicsDmaId dmaId;
     int     card;
     vtrType type;
+    int     nchannels;
+    int     arraySize; /* samples per channel */
     char    *a16;
     int     memoffset;
     char    *memory;
@@ -507,7 +507,7 @@ STATIC gtrStatus readPostTrigger(vtrInfo *pvtrInfo,gtrchannel **papgtrchannel)
         int ndata,nskipHigh,nskipLow;
 
         ndata = pvtrInfo->numberPTS * pvtrInfo->numberPTE;
-        if(ndata>ARRAYSIZE) ndata = ARRAYSIZE;
+        if(ndata>pvtrInfo->arraySize) ndata = pvtrInfo->arraySize;
         phigh = papgtrchannel[indgroup + 4];
         plow = papgtrchannel[indgroup];
         nskipHigh = nskipLow = 0;
@@ -527,7 +527,7 @@ STATIC gtrStatus readPrePostTrigger(vtrInfo *pvtrInfo,gtrchannel **papgtrchannel
             nevents,readRegister(pvtrInfo,CPTCCDARM));
     }
     writeRegister(pvtrInfo,TCOUNTER,1);
-    eventsize = ARRAYSIZE/nevents;
+    eventsize = pvtrInfo->arraySize/nevents;
     if(numberPPS>eventsize) numberPPS = eventsize;
     if(numberPPS==0) numberPPS = eventsize;
     for(indevent=0; indevent<nevents; indevent++) {
@@ -666,12 +666,14 @@ STATIC gtrStatus vtrregisterHandler(gtrPvt pvt,
 
 STATIC int vtrnumberChannels(gtrPvt pvt)
 {
-    return(8);
+    vtrInfo *pvtrInfo = (vtrInfo *)pvt;
+    return(pvtrInfo->nchannels);
 }
 
 STATIC int vtrnumberRawChannels(gtrPvt pvt)
 {
-    return(4);
+    vtrInfo *pvtrInfo = (vtrInfo *)pvt;
+    return(pvtrInfo->nchannels/2);
 }
 
 STATIC gtrStatus vtrclockChoices(gtrPvt pvt,int *number,char ***choice)
@@ -737,7 +739,7 @@ vtrmultiEventChoices,
 
 int vtr10012Config(int card,
     int a16offset,unsigned int memoffset,
-    int intVec,int intLev, int useDma)
+    int intVec,int intLev, int useDma, int nchannels, int kilosamplesPerChan)
 {
     char *a16;
     gtrops *pgtrops;
@@ -812,6 +814,9 @@ int vtr10012Config(int card,
     pvtrInfo->dmaId = dmaId;
     pvtrInfo->card = card;
     pvtrInfo->type = type;
+    pvtrInfo->nchannels = (nchannels ? nchannels : 8);
+    if(kilosamplesPerChan==0) kilosamplesPerChan = 256;
+    pvtrInfo->arraySize = kilosamplesPerChan * 1024;
     pvtrInfo->a16 = a16;
     pvtrInfo->memoffset = memoffset;
     pvtrInfo->memory = memory;
@@ -839,15 +844,19 @@ static const iocshArg vtr10012ConfigArg2 = { "VME memory offset",iocshArgInt};
 static const iocshArg vtr10012ConfigArg3 = { "interrupt vector",iocshArgInt};
 static const iocshArg vtr10012ConfigArg4 = { "interrupt level",iocshArgInt};
 static const iocshArg vtr10012ConfigArg5 = { "use DMA",iocshArgInt};
+static const iocshArg vtr10012ConfigArg6 = { "nchannels",iocshArgInt};
+static const iocshArg vtr10012ConfigArg7 = { "kilosamplesPerChan",iocshArgInt};
 static const iocshArg *vtr10012ConfigArgs[] = {
     &vtr10012ConfigArg0, &vtr10012ConfigArg1, &vtr10012ConfigArg2,
-    &vtr10012ConfigArg3, &vtr10012ConfigArg4, &vtr10012ConfigArg5};
+    &vtr10012ConfigArg3, &vtr10012ConfigArg4, &vtr10012ConfigArg5,
+    &vtr10012ConfigArg6,&vtr10012ConfigArg7};
 static const iocshFuncDef vtr10012ConfigFuncDef =
-                      {"vtr10012Config",6,vtr10012ConfigArgs};
+                      {"vtr10012Config",8,vtr10012ConfigArgs};
 static void vtr10012ConfigCallFunc(const iocshArgBuf *args)
 {
     vtr10012Config(args[0].ival, args[1].ival, args[2].ival,
-                 args[3].ival, args[4].ival, args[5].ival);
+                 args[3].ival, args[4].ival, args[5].ival,
+                 args[6].ival, args[7].ival);
 }
 
 /*

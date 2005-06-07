@@ -20,7 +20,8 @@ extern "C" {
 
 int vtr10012Config(int card,
     int a16offset,unsigned int memoffset,
-    int intVec,int intLev,int useDma);
+    int intVec,int intLev,int useDma,
+    int nchannels, int kilosamplesPerChan);
 
 int dma_xfer(
     unsigned long realVMEaddr,unsigned long RAMaddr,unsigned long byteCount);
