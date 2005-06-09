@@ -372,10 +372,11 @@ field(FTVL,"&lt;type&gt;")</pre>
   <li>card is the card (link) number of the recorder</li>
   <li>signal is the input. TRs often use the name channel and number them
     starting with channel 1. Signal is just (channel -1).</li>
+  <li>readData can be readRawData for transient recorders which support faster readout of data is some sort of 'raw' format</li>
   <li>size is the number of elements to allocate for the array</li>
   <li>type can be SHORT, FLOAT, or DOUBLE. Note that using type FLOAT or
     DOUBLE can cause extra storage to be allocated. Also Channel Access may
-    limit the size of arrays that can be sent to clients.</li>
+    limit the size of arrays that can be sent to clients. type can be LONG for reading raw data.</li>
 </ul>
 
 <p>A waveform record should always be declared as I/O Intr scanned, which
