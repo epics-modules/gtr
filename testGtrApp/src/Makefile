@@ -43,7 +43,7 @@ testGtr_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 #Libraries needed by particular OS classes
 OP_SYS_LDLIBS_RTEMS += -lbspExt
-OP_SYS_LDLIBS_RTEMS += -ldrvUniverseDma
+#OP_SYS_LDLIBS_RTEMS += -ldrvUniverseDma
 OP_SYS_LDLIBS += $(OP_SYS_LDLIBS_$(OS_CLASS))
 
 #===========================
