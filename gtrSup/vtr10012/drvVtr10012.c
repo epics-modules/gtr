@@ -62,7 +62,7 @@ typedef unsigned short uint16;
 
 #define BUFLEN 2048
 
-int vtr10012Debug=2;
+int vtr10012Debug=0;
 
 typedef enum {vtrType10012,vtrType10012_8,vtrType8014,vtrType10014} vtrType;
 #define vtrNTypes vtrType10014 + 1
