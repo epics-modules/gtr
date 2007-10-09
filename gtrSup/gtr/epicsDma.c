@@ -27,13 +27,17 @@
 typedef void (*VOIDFUNCPTR)(void *);
 typedef unsigned long   UINT32;
 #endif
+#pragma weak sysDmaCreate
+#pragma weak sysDmaStatus
+#pragma weak sysDmaToVme
+#pragma weak sysDmaFromVme
 typedef struct dmaRequest *DMA_ID;
-DMA_ID sysDmaCreate(VOIDFUNCPTR callback, void *context) __attribute__((weak));
-int sysDmaStatus(DMA_ID dmaId) __attribute__((weak));
+DMA_ID sysDmaCreate(VOIDFUNCPTR callback, void *context);
+int sysDmaStatus(DMA_ID dmaId);
 int sysDmaToVme(DMA_ID dmaId, UINT32 vmeAddr, int adrsSpace,
-              void *pLocal, int length, int dataWidth) __attribute__((weak));
+                              void *pLocal, int length, int dataWidth);
 int sysDmaFromVme(DMA_ID dmaId, void *pLocal, UINT32 vmeAddr,
-              int adrsSpace, int length, int dataWidth) __attribute__((weak));
+                                int adrsSpace, int length, int dataWidth);
 static DMA_ID (*psysDmaCreate)(VOIDFUNCPTR callback, void *context) = sysDmaCreate;
 static int (*psysDmaStatus)(DMA_ID dmaId) = sysDmaStatus;
 static int (*psysDmaToVme)(DMA_ID dmaId, UINT32 vmeAddr, int adrsSpace,
@@ -42,10 +46,12 @@ static int (*psysDmaFromVme)(DMA_ID dmaId, void *pLocal, UINT32 vmeAddr,
               int adrsSpace, int length, int dataWidth) = sysDmaFromVme;
 #else
 #include <drvUniverseDma.h>
-static sysDmaCreate    psysDmaCreate  = universeDmaCreate;
-static sysDmaStatus    psysDmaStatus  = universeDmaStatus;
-static sysDmaFromVme   psysDmaFromVme = universeDmaFromVme;
-static sysDmaToVme     psysDmaToVme   = universeDmaToVme;
+static DMA_ID (*psysDmaCreate)(VOIDFUNCPTR callback, void *context) = universeDmaCreate;
+static int (*psysDmaStatus)(DMA_ID dmaId) = universeDmaStatus;
+static int (*psysDmaToVme)(DMA_ID dmaId, UINT32 vmeAddr, int adrsSpace,
+              void *pLocal, int length, int dataWidth) = universeDmaToVme;
+static int (*psysDmaFromVme)(DMA_ID dmaId, void *pLocal, UINT32 vmeAddr,
+              int adrsSpace, int length, int dataWidth) = universeDmaFromVme;
 #endif
 /*
  * EPICS DMA identifier
