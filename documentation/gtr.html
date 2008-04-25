@@ -178,8 +178,9 @@ application.</p>
         <tt>dbLoadRecords("db/gtr.db,"name=</tt><em>&lt;name&gt;</em><tt>,card=</tt><em>&lt;card&gt;</em><tt>")</tt></li>
       <li>Add commands to load the GTR waveform records (one per input
         channel):<br />
-        <tt>dbLoadRecords("db/gtrwaveform.db,"name=</tt><em>&lt;name&gt;</em><tt>,card=</tt><em>&lt;C&gt;</em><tt>,<br />
-         signal=</tt><em>&lt;S&gt;</em><tt>,size=</tt><em>&lt;size&gt;</em><tt>,type=</tt><em>&lt;type&gt;</em><tt>")</tt><br
+        <tt>dbLoadRecords("db/gtrwaveform.db,"name=</tt><em>&lt;name&gt;</em><tt>,card=</tt><em>&lt;C&gt;</em><tt>,<br
+        />
+        signal=</tt><em>&lt;S&gt;</em><tt>,size=</tt><em>&lt;size&gt;</em><tt>,type=</tt><em>&lt;type&gt;</em><tt>")</tt><br
         />
         You'll have to provide appropriate values for the PV name prefix
         (<em>&lt;name&gt;</em>), the card number (<em>&lt;C&gt;</em>), the
@@ -206,8 +207,8 @@ describes the components:</p>
   <li>gtr.db and gtrwaveform.db</li>
   <li>GTR Device support</li>
   <li>GTR driver support</li>
-  <li>Support for Joerger VTR1012, VTR10010, VTR10012, VTR8014, VTR8014,
-    and VTR812.</li>
+  <li>Support for Joerger VTR1012, VTR10010, VTR10012, VTR8014, VTR10014, and
+    VTR812.</li>
   <li>Support for Struck SIS3300 and SIS3301</li>
 </ul>
 
@@ -372,11 +373,13 @@ field(FTVL,"&lt;type&gt;")</pre>
   <li>card is the card (link) number of the recorder</li>
   <li>signal is the input. TRs often use the name channel and number them
     starting with channel 1. Signal is just (channel -1).</li>
-  <li>readData can be readRawData for transient recorders which support faster readout of data is some sort of 'raw' format</li>
+  <li>readData can be readRawData for transient recorders which support
+    faster readout of data is some sort of 'raw' format</li>
   <li>size is the number of elements to allocate for the array</li>
   <li>type can be SHORT, FLOAT, or DOUBLE. Note that using type FLOAT or
     DOUBLE can cause extra storage to be allocated. Also Channel Access may
-    limit the size of arrays that can be sent to clients. type can be LONG for reading raw data.</li>
+    limit the size of arrays that can be sent to clients. type can be LONG
+    for reading raw data.</li>
 </ul>
 
 <p>A waveform record should always be declared as I/O Intr scanned, which
@@ -408,13 +411,13 @@ hardware specific support.</p>
 <p>The interfaces are defind in drvGtr.h as follows:</p>
 <pre>typedef void *gtrPvt;
 typedef void (*gtrhandler)(void *pvt);
-typedef short int16;
+typedef short epicsInt16;
 typedef enum {gtrStatusOK=0,gtrStatusBusy=-1,gtrStatusError=-2} gtrStatus;
 
 typedef struct gtrchannel {
     int len; /*size of pdata array*/
     int ndata; /*number of elements readMemory put into array*/
-    int16 *pdata;
+    epicsInt16 *pdata;
     int ftvl; /*type of data to which pdata points*/
 }gtrchannel;
 
@@ -436,7 +439,7 @@ typedef struct gtrops {
     /*papgtrchannel is nchannels array of pointers to gtrchannel*/
     gtrStatus (*readMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
     gtrStatus (*readRawMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
-    gtrStatus (*getLimits)(gtrPvt pvt, int16 *rawLow,int16 *rawHigh);
+    gtrStatus (*getLimits)(gtrPvt pvt, epicsInt16 *rawLow,epicsInt16 *rawHigh);
     gtrStatus (*registerHandler)(gtrPvt pvt,gtrhandler usrIH,void *handlerPvt);
     int       (*numberChannels)(gtrPvt pvt);
     int       (*numberRawChannels)(gtrPvt pvt);
@@ -562,9 +565,9 @@ following command must appear in a startup file before iocInit:</p>
 
 <h2>drvVtr10012</h2>
 
-<p>This provides support for the Joerger VTR10012, VTR10012_8, VTR8014,
-and VTR8014 recorders. The VTR10012_8 only supports single event postTrigger of 1024
-samples.</p>
+<p>This provides support for the Joerger VTR10012, VTR10012_8, VTR8014, and
+VTR10014 recorders. The VTR10012_8 only supports single event postTrigger of
+1024 samples.</p>
 
 <p>The following command must appear in a startup file before iocInit:</p>
 <pre>vtr10012Config(card,a16offset,a32offset,intVec,intLev,useDma,nchannels,kilosamplesPerChan)
@@ -738,9 +741,9 @@ style="font-family: courier">sisfadcConfig(card,clockspeed,a32offset,intVec,intL
   </li>
 </ul>
 
-<p>If the one wire ID register option is present the TR name is
-formed by appending the clock speed and serial number
-to the base device (e.g. sis3301-80 SN 1478).</p>
+<p>If the one wire ID register option is present the TR name is formed by
+appending the clock speed and serial number to the base device (e.g.
+sis3301-80 SN 1478).</p>
 
 <h2>Implementing a TR specific driver</h2>
 
@@ -936,7 +939,7 @@ has the following definition:</p>
 <pre>typedef struct gtrchannel {
     int    len;   /*size of pdata array*/
     int    ndata; /*number of elements readMemory put into array*/
-    int16 *pdata;
+    epicsInt16 *pdata;
     int    ftvl;  /*menuFtypeXXXX of buffer to which pdata points*/
 }gtrchannel;</pre>
 

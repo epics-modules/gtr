@@ -55,7 +55,7 @@ typedef enum {vtrType812_10,vtrType812_40} vtrType;
 static const char *vtrname[vtr812NTypes] = {
     "VTR812/10","VTR812/40"
 };
-static int16 dataMask[vtr812NTypes] = {0x0fff,0x0fff};
+static epicsInt16 dataMask[vtr812NTypes] = {0x0fff,0x0fff};
 
 #define nclockChoices812_10 16
 static char *clockChoices812_10[nclockChoices812_10] = {
@@ -458,7 +458,7 @@ STATIC void readContiguous(vtrInfo *pvtrInfo,
     gtrchannel *phigh,gtrchannel *plow,uint32 *pmemory,
     int nmax,int *nskipHigh, int *nskipLow)
 {
-    int16 high,low,mask;
+    epicsInt16 high,low,mask;
     int ind;
     int bufOffset = BUFLEN;
 
@@ -613,7 +613,7 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus vtrgetLimits(gtrPvt pvt,int16 *rawLow,int16 *rawHigh)
+STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
     *rawLow = 0;

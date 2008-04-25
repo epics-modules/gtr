@@ -14,19 +14,20 @@
 #ifndef drvGtrH
 #define drvGtrH
 
+#include <epicsTypes.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef void *gtrPvt;
 typedef void (*gtrhandler)(void *pvt);
-typedef short int16;
 typedef enum {gtrStatusOK=0,gtrStatusBusy=-1,gtrStatusError=-2} gtrStatus;
 
 typedef struct gtrchannel {
     int len; /*size of pdata array*/
     int ndata; /*number of elements readMemory put into array*/
-    int16 *pdata;
+    epicsInt16 *pdata;
     int ftvl;
 }gtrchannel;
 
@@ -48,7 +49,7 @@ typedef struct gtrops {
     /*papgtrchannel is nchannels array of pointers to gtrchannel*/
     gtrStatus (*readMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
     gtrStatus (*readRawMemory)(gtrPvt pvt, gtrchannel **papgtrchannel /* MARTY: Should the waveform record data type be passed here? */);
-    gtrStatus (*getLimits)(gtrPvt pvt, int16 *rawLow,int16 *rawHigh);
+    gtrStatus (*getLimits)(gtrPvt pvt, epicsInt16 *rawLow,epicsInt16 *rawHigh);
     gtrStatus (*registerHandler)(gtrPvt pvt,gtrhandler usrIH,void *handlerPvt);
     int       (*numberChannels)(gtrPvt pvt);
     int       (*numberRawChannels)(gtrPvt pvt);

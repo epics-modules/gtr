@@ -186,7 +186,7 @@ STATIC gtrStatus gtrreadRawMemory(gtrPvt pvt, gtrchannel **papgtrchannel)
     }
 }
 
-STATIC gtrStatus gtrgetLimits(gtrPvt pvt, int16 *rawLow,int16 *rawHigh)
+STATIC gtrStatus gtrgetLimits(gtrPvt pvt, epicsInt16 *rawLow,epicsInt16 *rawHigh)
 {
     gtrInfo *pgtrInfo = (gtrInfo *)pvt;
     

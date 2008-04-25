@@ -586,7 +586,7 @@ static long waveform_init_record(dbCommon *precord)
     } else if(!pgtrchannel->pdata || pgtrchannel->len<pwaveformRecord->nelm) {
         if(pgtrchannel->pdata && !pdpvt->isPdataBptr) free(pgtrchannel->pdata);
         pdpvt->isPdataBptr = 0;
-        pgtrchannel->pdata = dbCalloc(pwaveformRecord->nelm, sizeof(int16));
+        pgtrchannel->pdata = dbCalloc(pwaveformRecord->nelm, sizeof(epicsInt16));
         pgtrchannel->len = pwaveformRecord->nelm;
         pgtrchannel->ftvl = menuFtypeSHORT;
     }
@@ -634,12 +634,12 @@ static long waveform_read(dbCommon *precord)
     }
     if(pwaveformRecord->bptr==pgtrchannel->pdata) return(0);
     if(pwaveformRecord->ftvl == menuFtypeSHORT) {
-        memcpy(pwaveformRecord->bptr,pgtrchannel->pdata,ndata*sizeof(int16));
+        memcpy(pwaveformRecord->bptr,pgtrchannel->pdata,ndata*sizeof(epicsInt16));
     } else if(pwaveformRecord->ftvl == menuFtypeLONG) {
         memcpy(pwaveformRecord->bptr,pgtrchannel->pdata,ndata*sizeof(long));
     } else {
-        int16 rawLow,rawHigh;
-        int16 *pfrom = pgtrchannel->pdata;
+        epicsInt16 rawLow,rawHigh;
+        epicsInt16 *pfrom = pgtrchannel->pdata;
         int ind;
         (*pgtrops->getLimits)(gtrpvt,&rawLow,&rawHigh);
         if(pwaveformRecord->ftvl==menuFtypeFLOAT) {

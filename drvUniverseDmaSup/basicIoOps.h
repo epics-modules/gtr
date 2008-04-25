@@ -58,7 +58,7 @@ typedef union {
 } __EndianTestU;
 
 typedef uint32_t __TillsIoOps32_t;
-typedef uint16_t __TillsIoOps16_t;
+typedef uepicsInt16_t __TillsIoOps16_t;
 
 typedef union {
 	__TillsIoOps32_t	ui32;

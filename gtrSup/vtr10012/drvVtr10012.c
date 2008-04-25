@@ -34,7 +34,7 @@
 #include "drvVtr10012.h"
 
 typedef unsigned int uint32;
-typedef unsigned short uint16;
+typedef unsigned short uepicsInt16;
 
 #define NSAM10012_8 0x400
 #define STATIC static
@@ -69,7 +69,7 @@ typedef enum {vtrType10012,vtrType10012_8,vtrType8014,vtrType10014} vtrType;
 static const char *vtrname[vtrNTypes] = {
     "VTR10012","VTR10012_8","VTR8014","VTR10014"
 };
-static int16 dataMask[vtrNTypes] = {0x0fff,0x0fff,0x3fff,0x3fff};
+static epicsInt16 dataMask[vtrNTypes] = {0x0fff,0x0fff,0x3fff,0x3fff};
 
 #define nclockChoices10012 14
 static char *clockChoices10012[nclockChoices10012] = {
@@ -78,7 +78,7 @@ static char *clockChoices10012[nclockChoices10012] = {
     "Ext","Ext/2","Ext/4","Ext/10",
     "Ext/20","Ext/40","Ext/100"
 };
-static uint16 clockValue10012[nclockChoices10012] = {
+static uepicsInt16 clockValue10012[nclockChoices10012] = {
     0x0000, 0x0001, 0x0002, 0x0003,
     0x0004, 0x0005, 0x0006, 
     0x0008, 0x0009, 0x000a, 0x000b,
@@ -90,7 +90,7 @@ static char *clockChoices8014[nclockChoices8014] = {
     "80 MHz","40 MHz",
     "Ext","Ext/2"
 };
-static uint16 clockValue8014[nclockChoices8014] = {
+static uepicsInt16 clockValue8014[nclockChoices8014] = {
     0x0000, 0x0001,
     0x0008, 0x0009
 };
@@ -100,7 +100,7 @@ static char *clockChoices10014[nclockChoices10014] = {
     "100 MHz","50 MHz",
     "Ext","Ext/2"
 };
-static uint16 clockValue10014[nclockChoices10014] = {
+static uepicsInt16 clockValue10014[nclockChoices10014] = {
     0x0000, 0x0001,
     0x0008, 0x0009
 };
@@ -112,7 +112,7 @@ static int nclockChoices[vtrNTypes] = {
 static char **clockChoices[vtrNTypes] = {
     clockChoices10012, clockChoices10012, clockChoices8014,clockChoices10014
 };
-static uint16 *clockValue[vtrNTypes] = {
+static uepicsInt16 *clockValue[vtrNTypes] = {
     clockValue10012, clockValue10012, clockValue8014, clockValue10014
 };
 
@@ -122,7 +122,7 @@ static char *triggerChoices[ntriggerChoices] =
 {
     "soft","extTrigger","extGate"
 };
-static uint16 triggerMask[ntriggerChoices] = {
+static uepicsInt16 triggerMask[ntriggerChoices] = {
     0x0001, 0x0002, 0x0020
 };
 
@@ -196,24 +196,24 @@ static int dmaRead(epicsDmaId dmaId,uint32 vmeaddr,uint32 *buffer,int len)
     return(0);
 }
 
-static void writeRegister(vtrInfo *pvtrInfo, int offset,uint16 value)
+static void writeRegister(vtrInfo *pvtrInfo, int offset,uepicsInt16 value)
 {
     char *a16 = pvtrInfo->a16;
-    uint16 *reg;
+    uepicsInt16 *reg;
 
     if(vtr10012Debug>=2)
         printf("VTR %2.2x <- %4.4X\n", offset, value);
-    reg = (uint16 *)(a16+offset);
+    reg = (uepicsInt16 *)(a16+offset);
     *reg = value;
 }
 
-static uint16 readRegister(vtrInfo *pvtrInfo, int offset)
+static uepicsInt16 readRegister(vtrInfo *pvtrInfo, int offset)
 {
     char *a16 = pvtrInfo->a16;
-    uint16 *reg;
-    uint16 value;
+    uepicsInt16 *reg;
+    uepicsInt16 value;
 
-    reg = (uint16 *)(a16+offset);
+    reg = (uepicsInt16 *)(a16+offset);
     value = *reg;
     return(value);
 }
@@ -232,7 +232,7 @@ static void writeGate(vtrInfo *pvtrInfo,int value)
 
 STATIC uint32 readTriggerCounter(vtrInfo *pvtrInfo)
 {
-    uint16 low,high;
+    uepicsInt16 low,high;
 
     if(pvtrInfo->type==vtrType10012_8) return(1024);
     high = readRegister(pvtrInfo,TCOUNTER);
@@ -271,7 +271,7 @@ void vtr10012IH(void *arg)
         return;
     }
     if(pvtrInfo->type!=vtrType10012_8) {
-        uint16 regCPTCC = readRegister(pvtrInfo,CPTCC);
+        uepicsInt16 regCPTCC = readRegister(pvtrInfo,CPTCC);
         if(pvtrInfo->arm == armPostTrigger) {
             if(regCPTCC < pvtrInfo->numberPTE) return;
         } else if(pvtrInfo->arm == armPrePostTrigger) {
@@ -338,7 +338,7 @@ STATIC gtrStatus vtrclock(gtrPvt pvt, int value)
 STATIC gtrStatus vtrtrigger(gtrPvt pvt, int value)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
-    uint16 reg;
+    uepicsInt16 reg;
 
     if(isRebooting) epicsThreadSuspendSelf();
     if(value<0 || value>ntriggerChoices) return(gtrStatusError);
@@ -396,7 +396,7 @@ STATIC gtrStatus vtrnumberPTE(gtrPvt pvt, int value)
 STATIC gtrStatus vtrarm(gtrPvt pvt, int typ)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
-    uint16 reg,regControl;
+    uepicsInt16 reg,regControl;
     armType arm = (armType)typ;
 
     if(pvtrInfo->type==vtrType10012_8
@@ -420,7 +420,7 @@ STATIC gtrStatus vtrarm(gtrPvt pvt, int typ)
         writeRegister(pvtrInfo,ARMR,1);
         break;
     case armPrePostTrigger: {
-        uint16 multi = 0;
+        uepicsInt16 multi = 0;
         if(pvtrInfo->indMultiEventNumber>0)
             multi = 0x0004|(pvtrInfo->indMultiEventNumber - 1);
         writeRegister(pvtrInfo,MULPREPOST,multi);
@@ -446,7 +446,7 @@ STATIC void readContiguous(vtrInfo *pvtrInfo,
     gtrchannel *phigh,gtrchannel *plow,uint32 *pmemory,
     int nmax,int *nskipHigh, int *nskipLow)
 {
-    int16 high,low,mask;
+    epicsInt16 high,low,mask;
     int ind;
     int bufOffset = BUFLEN;
 
@@ -646,7 +646,7 @@ STATIC gtrStatus vtrreadRawMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus vtrgetLimits(gtrPvt pvt,int16 *rawLow,int16 *rawHigh)
+STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
     *rawLow = 0;
@@ -743,7 +743,7 @@ int vtr10012Config(int card,
 {
     char *a16;
     gtrops *pgtrops;
-    uint16 probeValue = 0;
+    uepicsInt16 probeValue = 0;
     vtrInfo *pvtrInfo;
     long status;
     vtrType type;

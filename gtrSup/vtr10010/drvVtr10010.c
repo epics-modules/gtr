@@ -94,7 +94,7 @@ typedef struct vtrInfo {
     void    *handlerPvt;
     void    *userPvt;
     int     arraySize;
-    int16   *channel;
+    epicsInt16   *channel;
 } vtrInfo;
 
 static ELLLIST vtrList;
@@ -367,11 +367,11 @@ STATIC gtrStatus vtrsoftTrigger(gtrPvt pvt)
 static int getArrayLimits(
     int prePost,
     int n, int location,     /* n to fetch, index of next place to put data*/
-    int16 *memLow, int memSize, 
-    int16 **lowBeg,int16 **lowStop,int16 **highBeg,int16 **highStop
+    epicsInt16 *memLow, int memSize, 
+    epicsInt16 **lowBeg,epicsInt16 **lowStop,int16 **highBeg,int16 **highStop
 )
 {
-    int16 *memStop = memLow + memSize;
+    epicsInt16 *memStop = memLow + memSize;
 
     if(n>memSize) n = memSize;
     if(!prePost) {
@@ -398,11 +398,11 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
     gtrchannel *pgtrchannel;
-    int16 *buffer;
+    epicsInt16 *buffer;
     int len,ndata;
-    int16 data;
-    int16 *lowBeg,*lowStop,*highBeg,*highStop;
-    int16 *pdata;
+    epicsInt16 data;
+    epicsInt16 *lowBeg,*lowStop,*highBeg,*highStop;
+    epicsInt16 *pdata;
 
     pgtrchannel = papgtrchannel[0];
     len = pgtrchannel->len;
@@ -427,7 +427,7 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus vtrgetLimits(gtrPvt pvt,int16 *rawLow,int16 *rawHigh)
+STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
 {
     *rawLow = 0;
     *rawHigh = 1024;
@@ -552,7 +552,7 @@ int vtr10010Config(int card,int a16offset,unsigned int a32offset,int intVec)
         return(0);
     }
     pvtrInfo->a32 = a32;
-    pvtrInfo->channel = (int16 *)pvtrInfo->a32;
+    pvtrInfo->channel = (epicsInt16 *)pvtrInfo->a32;
     status = devConnectInterruptVME(pvtrInfo->intVec,
         vtr10010IH,(void *)pvtrInfo);
     if(status) {

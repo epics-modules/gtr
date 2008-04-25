@@ -77,7 +77,7 @@ typedef struct vtrInfo {
     void    *handlerPvt;
     void    *userPvt;
     int     arraySize;
-    int16   *channel[nChannels1012];
+    epicsInt16   *channel[nChannels1012];
 } vtrInfo;
 
 #define nclockChoices 16
@@ -251,7 +251,7 @@ STATIC void vtrinit(gtrPvt pvt)
     pvtrInfo->a32 = a32;
     for(signal=0; signal<nChannels1012; signal++) {
         pvtrInfo->channel[signal] =
-            (int16 *)(a32 + pvtrInfo->arraySize *signal * 2);
+            (epicsInt16 *)(a32 + pvtrInfo->arraySize *signal * 2);
     }
     return;
 }
@@ -390,11 +390,11 @@ STATIC gtrStatus vtrsoftTrigger(gtrPvt pvt)
 static int getArrayLimits(
     int prePost,
     int n, int location,     /* n to fetch, index of next place to put data*/
-    int16 *memLow, int memSize, 
-    int16 **lowBeg,int16 **lowStop,int16 **highBeg,int16 **highStop
+    epicsInt16 *memLow, int memSize, 
+    epicsInt16 **lowBeg,epicsInt16 **lowStop,int16 **highBeg,int16 **highStop
 )
 {
-    int16 *memStop = memLow + memSize;
+    epicsInt16 *memStop = memLow + memSize;
 
     if(n>memSize) n = memSize;
     if(!prePost) {
@@ -421,11 +421,11 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
     gtrchannel *pgtrchannel;
-    int16 *buffer;
+    epicsInt16 *buffer;
     int len,ndata;
-    int16 data;
-    int16 *lowBeg,*lowStop,*highBeg,*highStop;
-    int16 *pdata;
+    epicsInt16 data;
+    epicsInt16 *lowBeg,*lowStop,*highBeg,*highStop;
+    epicsInt16 *pdata;
     int signal;
     int location;
 
@@ -455,7 +455,7 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus vtrgetLimits(gtrPvt pvt,int16 *rawLow,int16 *rawHigh)
+STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
 {
     *rawLow = 0;
     *rawHigh = 4096;

@@ -98,7 +98,7 @@ typedef struct sisTypeInfo {
     char **papclockChoices;
     int *paClockSource;
     int nclockChoices;
-    int16 dataMask;
+    epicsInt16 dataMask;
 }sisTypeInfo;
 
 static sisTypeInfo pasisTypeInfo[] = {
@@ -267,7 +267,7 @@ STATIC void readContiguous(sisInfo *psisInfo,
     gtrchannel *phigh,gtrchannel *plow,uint32 *pmemory,
     int nmax,int *nskipHigh, int *nskipLow)
 {
-    int16 high,low,himask,lomask;
+    epicsInt16 high,low,himask,lomask;
     int ind;
 
     himask = lomask = psisInfo->psisTypeInfo->dataMask;
@@ -690,7 +690,7 @@ STATIC gtrStatus sisreadRawMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus sisgetLimits(gtrPvt pvt,int16 *rawLow,int16 *rawHigh)
+STATIC gtrStatus sisgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
 {
     sisInfo *psisInfo = (sisInfo *)pvt;
     *rawLow = 0;
