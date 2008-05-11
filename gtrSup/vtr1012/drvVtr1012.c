@@ -389,9 +389,11 @@ STATIC gtrStatus vtrsoftTrigger(gtrPvt pvt)
 
 static int getArrayLimits(
     int prePost,
-    int n, int location,     /* n to fetch, index of next place to put data*/
+    int n,
+    int location,     /* n to fetch, index of next place to put data*/
     epicsInt16 *memLow, int memSize, 
-    epicsInt16 **lowBeg,epicsInt16 **lowStop,int16 **highBeg,int16 **highStop
+    epicsInt16 **lowBeg,epicsInt16 **lowStop,
+    epicsInt16 **highBeg, epicsInt16 **highStop
 )
 {
     epicsInt16 *memStop = memLow + memSize;
