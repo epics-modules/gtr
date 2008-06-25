@@ -178,7 +178,7 @@ static int sisFadcDebug = 0;
 static void writeRegister(sisInfo *psisInfo, int offset,uint32 value)
 {
     char *a32 = psisInfo->a32;
-    uint32 *reg;
+    volatile uint32 *reg;
 
     if(sisFadcDebug >= 2) {
         volatile static struct {
@@ -204,10 +204,8 @@ static void writeRegister(sisInfo *psisInfo, int offset,uint32 value)
                 else
                     irqOut++;
             }
-        }
-        printf("sisfadc: 0x%.8x -> %#x\n", value, offset);
-        if(sisFadcDebug >= 9) {
-            epicsThreadSleep(0.03);
+            printf("sisfadc: 0x%.8x -> %#x\n", value, offset);
+            if(sisFadcDebug >= 9) epicsThreadSleep(0.03);
         }
     }
     reg = (uint32 *)(a32+offset);
@@ -217,7 +215,7 @@ static void writeRegister(sisInfo *psisInfo, int offset,uint32 value)
 static uint32 readRegister(sisInfo *psisInfo, int offset)
 {
     char *a32 = psisInfo->a32;
-    uint32 *reg;
+    volatile uint32 *reg;
     uint32 value;
 
     reg = (uint32 *)(a32+offset);
@@ -252,6 +250,7 @@ void sisIH(void *arg)
 
     writeRegister(psisInfo,ACQCSR,0x000f0000);
     writeRegister(psisInfo,INTCONTROL,0x00ff0000);
+    readRegister(psisInfo,INTCONTROL); /* Dummy read to flush writes */
     if(isRebooting) return;
     switch(psisInfo->arm) {
     case armDisarm:
@@ -825,8 +824,6 @@ int sisfadcConfig(int card,int clockSpeed,
     }
     if(devReadProbe(4,a32+MODID,&probeValue)!=0) {
         printf("sisfadcConfig: no card at %#x (local address %p)\n",a32offset,(void *)a32);
-printf("sisType probeValue %8.8x\n",probeValue);
-while (devReadProbe(4,a32+MODID,&probeValue)!=0);
         return(0);
     }
     if((probeValue>>16) == 0x3300) {
