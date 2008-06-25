@@ -47,6 +47,7 @@ DBD += drvVtr812.dbd
 
 
 SRCS_RTEMS-mvme2100 += $(VME_ONLY_SRCS)
+SRCS_RTEMS-mvme3100 += $(VME_ONLY_SRCS)
 SRCS_RTEMS-mvme5500 += $(VME_ONLY_SRCS)
 SRCS_vxWorks        += $(VME_ONLY_SRCS)
 SRCS += $(SRCS_$(T_A))

@@ -1,2 +1,3 @@
 registrar(drvSISfadcRegisterCommands)
+variable(sisFadcDebug)
 include "gtr.dbd"
