@@ -206,6 +206,9 @@ static void writeRegister(sisInfo *psisInfo, int offset,uint32 value)
             }
         }
         printf("sisfadc: 0x%.8x -> %#x\n", value, offset);
+        if(sisFadcDebug >= 9) {
+            epicsThreadSleep(0.03);
+        }
     }
     reg = (uint32 *)(a32+offset);
     *reg = value;
