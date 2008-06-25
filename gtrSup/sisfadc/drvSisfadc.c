@@ -913,8 +913,11 @@ static void
 drvSISfadcRegisterCommands(void)
 {
     static int firstTime = 1;
+    static iocshVarDef debug = { "sisFadcDebug", iocshArgInt, &sisFadcDebug };
+
     if (firstTime) {
         iocshRegister(&sisfadcConfigFuncDef,sisfadcConfigCallFunc);
+        iocshRegisterVariable (&debug);
         firstTime = 0;
     }
 }
