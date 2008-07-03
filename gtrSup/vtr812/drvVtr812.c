@@ -490,13 +490,13 @@ STATIC void readContiguous(vtrInfo *pvtrInfo,
             --*nskipHigh;
         } else if(phigh->ndata<phigh->len) {
             high = (word>>16)&mask;
-            (phigh->pdata)[phigh->ndata++] = high;
+            ((epicsInt16 *)phigh->pdata)[phigh->ndata++] = high;
         }
         if(*nskipLow>0) {
             --*nskipLow;
         } else if(plow->ndata<plow->len) {
             low = word&mask;
-            (plow->pdata)[plow->ndata++] = low;
+            ((epicsInt16 *)plow->pdata)[plow->ndata++] = low;
         }
         if((phigh->ndata>=phigh->len) && (plow->ndata>=plow->len)) break;
     }
@@ -613,7 +613,7 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
+STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt32 *rawLow,epicsInt32 *rawHigh)
 {
     vtrInfo *pvtrInfo = (vtrInfo *)pvt;
     *rawLow = 0;
@@ -685,11 +685,9 @@ vtrnumberPTE,
 vtrarm,
 vtrsoftTrigger,
 vtrreadMemory,
-0, /* readRawMemory */
 vtrgetLimits,
 vtrregisterHandler,
 vtrnumberChannels,
-0, /* numberRawChannels */
 vtrclockChoices,
 vtrarmChoices,
 vtrtriggerChoices,

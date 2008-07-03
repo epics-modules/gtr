@@ -6,21 +6,20 @@
 < cdCommands
 
 cd topbin
-ld < iocCore
-ld < exampleLib
+ld < testGtr.munch
 
 cd top
 dbLoadDatabase("dbd/testGtr.dbd")
 testGtr_registerRecordDeviceDriver(pdbbase) 
 
 cd startup
-< vtr10010
-< vtr1012
-< vtr10012
-< vtr10012_8
-< vtr8014
-< vtr812
-< sis3300
-< sis3301
+#< vtr10010
+#< vtr1012
+#< vtr10012
+#< vtr10012_8
+#< vtr8014
+#< vtr812
+#< sis3300
+< sis3301_long
 
 iocInit()

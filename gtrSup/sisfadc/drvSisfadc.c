@@ -180,6 +180,7 @@ static void writeRegister(sisInfo *psisInfo, int offset,uint32 value)
     char *a32 = psisInfo->a32;
     volatile uint32 *reg;
 
+if(sisFadcDebug&&!epicsInterruptIsInterruptContext())epicsThreadSleep(0.01);
     if(sisFadcDebug >= 2) {
         volatile static struct {
             uint32 offset;
@@ -250,19 +251,20 @@ void sisIH(void *arg)
 
     writeRegister(psisInfo,ACQCSR,0x000f0000);
     writeRegister(psisInfo,INTCONTROL,0x00ff0000);
-    readRegister(psisInfo,INTCONTROL); /* Dummy read to flush writes */
-    if(isRebooting) return;
-    switch(psisInfo->arm) {
-    case armDisarm:
-        break;
-    case armPostTrigger:
-    case armPrePostTrigger:
-        if(psisInfo->usrIH) (*psisInfo->usrIH)(psisInfo->handlerPvt);
-        break;
-    default:
-        epicsInterruptContextMessage("drvSisfadc::sisIH Illegal armType\n");
-        break;
+    if(!isRebooting) {
+        switch(psisInfo->arm) {
+        case armDisarm:
+            break;
+        case armPostTrigger:
+        case armPrePostTrigger:
+            if(psisInfo->usrIH) (*psisInfo->usrIH)(psisInfo->handlerPvt);
+            break;
+        default:
+            epicsInterruptContextMessage("drvSisfadc::sisIH Illegal armType\n");
+            break;
+        }
     }
+    readRegister(psisInfo,INTCONTROL); /* Dummy read to flush writes */
 }
 
 STATIC void readContiguous(sisInfo *psisInfo,
@@ -317,13 +319,13 @@ STATIC void readContiguous(sisInfo *psisInfo,
             --*nskipHigh;
         } else if(phigh->ndata<phigh->len) {
             high = (word>>16)&himask;
-            (phigh->pdata)[phigh->ndata++] = high;
+            ((epicsInt16 *)phigh->pdata)[phigh->ndata++] = high;
         }
         if(*nskipLow>0) {
             --*nskipLow;
         } else if(plow->ndata<plow->len) {
             low = word&lomask;
-            (plow->pdata)[plow->ndata++] = low;
+            ((epicsInt16 *)plow->pdata)[plow->ndata++] = low;
         }
         if((phigh->ndata>=phigh->len) && (plow->ndata>=plow->len)) break;
     }
@@ -524,6 +526,15 @@ STATIC gtrStatus sissoftTrigger(gtrPvt pvt)
     return(gtrStatusOK);
 }
 
+STATIC gtrchannel *sisCheckType(gtrchannel *p)
+{
+    if (p->ftvl == menuFtypeLONG) {
+        printf("SIS transient recorder doesn't yet handle FTVL LONG.\n");
+        return NULL;
+    }
+    return p;
+}
+
 STATIC gtrStatus sisreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
 {
     sisInfo *psisInfo = (sisInfo *)pvt;
@@ -544,87 +555,6 @@ STATIC gtrStatus sisreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
         plow->ndata=0;
         pgroup = (uint32 *)(pbank + indgroup*0x80000);
         nevents = multiEventNumber[psisInfo->indMultiEventNumber];
-        if(psisInfo->trigger==triggerFPGate) nevents = 1;
-        eventsize = ARRAYSIZE/nevents;
-        if(numberPPS>eventsize) numberPPS = eventsize;
-        if(numberPPS==0) numberPPS = eventsize;
-        for(indevent=0; indevent<nevents; indevent++) {
-            int nhigh,nlow,nmax,nskipHigh,nskipLow;
-            uint32 *pevent;
-
-            nhigh = phigh->len - phigh->ndata;
-            if(nhigh>numberPPS) nhigh = numberPPS;
-            nlow = plow->len - plow->ndata;
-            if(nlow>numberPPS) nlow = numberPPS;
-            nmax = (nhigh>nlow) ? nhigh : nlow;
-            if(nmax<=0) break;
-            pevent = pgroup + indevent*eventsize;
-            switch(psisInfo->arm) {
-            case armPostTrigger: {
-                  int nnow;
-                  if(psisInfo->trigger == triggerFPGate)
-                      nnow = readRegister(psisInfo,BANK1ADDRESS);
-                  else
-                      nnow = readRegister(psisInfo,STOPDELAY);
-                  nskipHigh = nskipLow = 0;
-                  readContiguous(psisInfo,phigh,plow,
-                      pevent,nnow,&nskipHigh,&nskipLow);
-                }
-                break;
-            case armPrePostTrigger: {
-                    volatile int *ptriggerInfo;
-                    int endAddress;
-
-                    ptriggerInfo = (volatile int *)
-                        (psisInfo->a32 + 0x201000 + indevent*4);
-                    endAddress =  *ptriggerInfo & 0x0000ffff;
-                    nskipHigh = nmax - nhigh;
-                    nskipLow = nmax - nlow;
-                    if(endAddress < nmax) {
-                        int nend,nbeg;
-        
-                        nend = nmax - endAddress;
-                        nbeg = nmax - nend;
-                        readContiguous(psisInfo,phigh,plow,
-                            (pevent + eventsize - nend),nend,
-                            &nskipHigh,&nskipLow);
-                        readContiguous(psisInfo,phigh,plow,
-                            pevent,nbeg,&nskipHigh,&nskipLow);
-                    } else {
-                        readContiguous(psisInfo,phigh,plow,
-                            (pevent + endAddress - nmax),nmax,
-                            &nskipHigh,&nskipLow);
-                    }
-                }
-                break;
-            default:
-                return(gtrStatusError);
-            }
-        }
-    }
-    return(gtrStatusOK);
-}
-
-STATIC gtrStatus sisreadRawMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
-{
-    sisInfo *psisInfo = (sisInfo *)pvt;
-    char *pbank;
-    int indgroup;
-    int numberPPS = psisInfo->numberPPS;
-
-    pbank = psisInfo->a32 + MEMORYSTART;
-    for(indgroup=0; indgroup<4; indgroup++) {
-        gtrchannel *pchan;
-        uint32 *pgroup;
-        int nevents,eventsize,indevent;
-
-        pchan = papgtrchannel[indgroup];
-
-        pchan->ndata=0;
-        if(pchan->len==0) continue;  /* No waveform record */
-        if(pchan->ftvl!=menuFtypeLONG) return(gtrStatusError);
-        pgroup = (uint32 *)(pbank + indgroup*0x80000);
-        nevents = multiEventNumber[psisInfo->indMultiEventNumber];
         if(psisInfo->trigger==triggerFPGate) {
             nevents = 1;
         }
@@ -638,61 +568,120 @@ STATIC gtrStatus sisreadRawMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
         eventsize = ARRAYSIZE/nevents;
         if(numberPPS>eventsize) numberPPS = eventsize;
         if(numberPPS==0) numberPPS = eventsize;
-        for(indevent=0; indevent<nevents; indevent++) {
-            int nchan;
-            uint32 *pevent;
-
-            nchan = pchan->len - pchan->ndata;
-            if(nchan>numberPPS) nchan = numberPPS;
-            if(nchan<=0) break;
-            pevent = pgroup + indevent*eventsize;
-            switch(psisInfo->arm) {
-            case armPostTrigger: {
-                int nnow;
-                if(psisInfo->trigger == triggerFPGate) {
-                     nnow = readRegister(psisInfo,BANK1ADDRESS);
-                }
-                else {
-                    int eventInfo = readRegister(psisInfo,TRIGGEREVENTDIRECTORY+(indevent*4));
-                    nnow = eventInfo % eventsize;
-                    if((nnow == 0) && ((eventInfo & (1 << 19)) != 0))
-                        nnow = eventsize;
-                }
-                if(nnow>nchan)
-                    nnow = nchan;
-#ifdef EMIT_TIMING_MARKERS
-                if(indgroup==0) writeRegister(psisInfo,CSR,0x00000002);
-#endif
-                if(psisInfo->dmaId) {
-                    if(epicsDmaFromVmeAndWait(psisInfo->dmaId,
-                                   ((long *)pchan->pdata+pchan->ndata),
-                                   (long)pevent,
-                                   VME_AM_EXT_SUP_ASCENDING,
-                                   nnow*sizeof(long),
-                                   sizeof(long)) != 0) {
-                        printf("Can't perform DMA: %s\n", strerror(errno));
-                        return(gtrStatusError);
+        if (phigh->len && (phigh->ftvl == menuFtypeLONG)) {
+            if (plow->len)
+                errlogPrintf("drvSisfadc: 'low' channel is ignored when 'high' chanel FTVL is LONG\n");
+            for(indevent=0; indevent<nevents; indevent++) {
+                int nchan;
+                uint32 *pevent;
+    
+                nchan = phigh->len - phigh->ndata;
+                if(nchan>numberPPS) nchan = numberPPS;
+                if(nchan<=0) break;
+                pevent = pgroup + indevent*eventsize;
+                switch(psisInfo->arm) {
+                case armPostTrigger: {
+                    int nnow;
+                    if(psisInfo->trigger == triggerFPGate) {
+                         nnow = readRegister(psisInfo,BANK1ADDRESS);
                     }
-                }
-                else {
-                    bcopyLongs((char *)pevent,(char *)((long *)pchan->pdata+pchan->ndata),nnow);
-                }
+                    else {
+                        int eventInfo = readRegister(psisInfo,TRIGGEREVENTDIRECTORY+(indevent*4));
+                        nnow = eventInfo % eventsize;
+                        if((nnow == 0) && ((eventInfo & (1 << 19)) != 0))
+                            nnow = eventsize;
+                    }
+                    if(nnow>nchan)
+                        nnow = nchan;
 #ifdef EMIT_TIMING_MARKERS
-                if(indgroup==0) writeRegister(psisInfo,CSR,0x00020000);
+                    if(indgroup==0) writeRegister(psisInfo,CSR,0x00000002);
 #endif
-                pchan->ndata += nnow;
+                    if(psisInfo->dmaId) {
+                        if(epicsDmaFromVmeAndWait(psisInfo->dmaId,
+                                       ((long *)phigh->pdata+phigh->ndata),
+                                       (long)pevent,
+                                       VME_AM_EXT_SUP_ASCENDING,
+                                       nnow*sizeof(long),
+                                       sizeof(long)) != 0) {
+                            printf("Can't perform DMA: %s\n", strerror(errno));
+                            return(gtrStatusError);
+                        }
+                    }
+                    else {
+                        bcopyLongs((char *)pevent,(char *)((long *)phigh->pdata+phigh->ndata),nnow);
+                    }
+#ifdef EMIT_TIMING_MARKERS
+                    if(indgroup==0) writeRegister(psisInfo,CSR,0x00020000);
+#endif
+                    phigh->ndata += nnow;
+                    }
+                    break;
+                case armPrePostTrigger: 
+                default:
+                    return(gtrStatusError);
                 }
-                break;
-            case armPrePostTrigger: 
-            default:
-                return(gtrStatusError);
+            }
+        }
+        else {
+            for(indevent=0; indevent<nevents; indevent++) {
+                int nhigh,nlow,nmax,nskipHigh,nskipLow;
+                uint32 *pevent;
+    
+                nhigh = phigh->len - phigh->ndata;
+                if(nhigh>numberPPS) nhigh = numberPPS;
+                nlow = plow->len - plow->ndata;
+                if(nlow>numberPPS) nlow = numberPPS;
+                nmax = (nhigh>nlow) ? nhigh : nlow;
+                if(nmax<=0) break;
+                pevent = pgroup + indevent*eventsize;
+                switch(psisInfo->arm) {
+                case armPostTrigger: {
+                      int nnow;
+                      if(psisInfo->trigger == triggerFPGate)
+                          nnow = readRegister(psisInfo,BANK1ADDRESS);
+                      else
+                          nnow = readRegister(psisInfo,STOPDELAY);
+                      nskipHigh = nskipLow = 0;
+                      readContiguous(psisInfo,phigh,plow,
+                          pevent,nnow,&nskipHigh,&nskipLow);
+                    }
+                    break;
+                case armPrePostTrigger: {
+                        volatile int *ptriggerInfo;
+                        int endAddress;
+    
+                        ptriggerInfo = (volatile int *)
+                            (psisInfo->a32 + 0x201000 + indevent*4);
+                        endAddress =  *ptriggerInfo & 0x0000ffff;
+                        nskipHigh = nmax - nhigh;
+                        nskipLow = nmax - nlow;
+                        if(endAddress < nmax) {
+                            int nend,nbeg;
+            
+                            nend = nmax - endAddress;
+                            nbeg = nmax - nend;
+                            readContiguous(psisInfo,phigh,plow,
+                                (pevent + eventsize - nend),nend,
+                                &nskipHigh,&nskipLow);
+                            readContiguous(psisInfo,phigh,plow,
+                                pevent,nbeg,&nskipHigh,&nskipLow);
+                        } else {
+                            readContiguous(psisInfo,phigh,plow,
+                                (pevent + endAddress - nmax),nmax,
+                                &nskipHigh,&nskipLow);
+                        }
+                    }
+                    break;
+                default:
+                    return(gtrStatusError);
+                }
             }
         }
     }
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus sisgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
+STATIC gtrStatus sisgetLimits(gtrPvt pvt,epicsInt32 *rawLow,epicsInt32 *rawHigh)
 {
     sisInfo *psisInfo = (sisInfo *)pvt;
     *rawLow = 0;
@@ -713,11 +702,6 @@ STATIC gtrStatus sisregisterHandler(gtrPvt pvt,
 STATIC int sisnumberChannels(gtrPvt pvt)
 {
     return(8);
-}
-
-STATIC int sisnumberRawChannels(gtrPvt pvt)
-{
-    return(4);
 }
 
 STATIC gtrStatus sisclockChoices(gtrPvt pvt,int *number,char ***choice)
@@ -779,11 +763,9 @@ sisnumberPTE,  /* For gate-chaining mode */
 sisarm, 
 sissoftTrigger, 
 sisreadMemory,
-sisreadRawMemory,
 sisgetLimits,
 sisregisterHandler,
 sisnumberChannels,
-sisnumberRawChannels,
 sisclockChoices,
 sisarmChoices,
 sistriggerChoices,

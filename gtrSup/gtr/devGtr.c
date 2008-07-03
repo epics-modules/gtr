@@ -51,7 +51,6 @@ typedef struct devGtr {
     IOSCANPVT   ioscanpvt;
     int arm;
     devGtrChannels channels;
-    devGtrChannels rawChannels;
 } devGtr;
 
 typedef struct dpvt{
@@ -98,13 +97,13 @@ static char *stringinParmString[NSIPARM] =
     "name"
 };
 
-#define NWFPARM 2
+#define NWFPARM 1
 typedef enum {
-    readData,readRawData
+    readData
 }waveformParm;
 static char *waveformParmString[NWFPARM] =
 {
-    "readData","readRawData"
+    "readData"
 };
 
 static long get_ioint_info(int cmd, dbCommon *precord, IOSCANPVT *pvt);
@@ -188,11 +187,6 @@ static void myCallback(CALLBACK *pcallback)
         if(status!=gtrStatusOK)
             printf("devGtr: myCallback read failed\n");
     }
-    if(pdevGtr->rawChannels.hasWaveforms) {
-        status = (*pgtrops->readRawMemory)(pdevGtr->gtrpvt,pdevGtr->rawChannels.papgtrchannel);
-        if(status!=gtrStatusOK)
-            printf("devGtr: myCallback raw read failed\n");
-    }
     scanIoRequest(pdevGtr->ioscanpvt);
 }
 
@@ -257,7 +251,6 @@ static dpvt *common_init_record(dbCommon *precord,DBLINK *plink,
         pdevGtr->gtrpvt = gtrpvt;
         pdevGtr->pgtrops = pgtrops;
         allocateChannels(&pdevGtr->channels, (*pgtrops->numberChannels)(gtrpvt));
-        allocateChannels(&pdevGtr->rawChannels, (*pgtrops->numberRawChannels)(gtrpvt));
         (*pgtrops->setUser)(gtrpvt,pdevGtr);
         callbackSetCallback(myCallback,&pdevGtr->callback);
         callbackSetUser(pdevGtr,&pdevGtr->callback);
@@ -528,6 +521,7 @@ static long waveform_init_record(dbCommon *precord)
     devGtrChannels *pdevgtrchannels;
     int signal;
     int ftvl = pwaveformRecord->ftvl;
+    epicsInt32 rawLow,rawHigh;
 
     pdpvt = common_init_record(precord,&pwaveformRecord->inp,
         waveformParmString,NWFPARM);
@@ -538,9 +532,9 @@ static long waveform_init_record(dbCommon *precord)
     pgtrops = pdevGtr->pgtrops;
     switch(pdpvt->parm) {
     case readData:     pdevgtrchannels=&pdevGtr->channels;     break;
-    case readRawData:  pdevgtrchannels=&pdevGtr->rawChannels;  break;
     default:           return(S_db_badField);
     }
+    (*pgtrops->getLimits)(gtrpvt,&rawLow,&rawHigh);
     switch(ftvl) {
     default:
         status = S_db_badField;
@@ -553,8 +547,6 @@ static long waveform_init_record(dbCommon *precord)
             break;
 
     case menuFtypeSHORT: {
-        short rawLow,rawHigh;
-        (*pgtrops->getLimits)(gtrpvt,&rawLow,&rawHigh);
         pwaveformRecord->hopr = rawHigh;
         pwaveformRecord->lopr = rawLow;
         }
@@ -578,7 +570,7 @@ static long waveform_init_record(dbCommon *precord)
     }
     pdpvt->signal = pvmeio->signal;
     pgtrchannel = &pdevgtrchannels->pachannel[pdpvt->signal];
-    if(((ftvl==menuFtypeSHORT)||(ftvl==menuFtypeLONG)) && !pgtrchannel->pdata) {
+    if(((ftvl==menuFtypeSHORT)||(ftvl==menuFtypeLONG)||(rawLow==rawHigh)) && !pgtrchannel->pdata) {
         pgtrchannel->pdata = pwaveformRecord->bptr;
         pgtrchannel->len = pwaveformRecord->nelm;
         pgtrchannel->ftvl = ftvl;
@@ -620,7 +612,6 @@ static long waveform_read(dbCommon *precord)
     pgtrops = pdevGtr->pgtrops;
     switch(pdpvt->parm) {
     case readData:     pdevgtrchannels=&pdevGtr->channels;     break;
-    case readRawData:  pdevgtrchannels=&pdevGtr->rawChannels;  break;
     default:           return(S_db_badField);
     }
     pgtrchannel = &pdevgtrchannels->pachannel[pdpvt->signal];
@@ -638,7 +629,7 @@ static long waveform_read(dbCommon *precord)
     } else if(pwaveformRecord->ftvl == menuFtypeLONG) {
         memcpy(pwaveformRecord->bptr,pgtrchannel->pdata,ndata*sizeof(long));
     } else {
-        epicsInt16 rawLow,rawHigh;
+        epicsInt32 rawLow,rawHigh;
         epicsInt16 *pfrom = pgtrchannel->pdata;
         int ind;
         (*pgtrops->getLimits)(gtrpvt,&rawLow,&rawHigh);
@@ -650,13 +641,13 @@ static long waveform_read(dbCommon *precord)
                 *pto++ = ((float)(*pfrom++) -low)/diff;
         } else if(pwaveformRecord->ftvl==menuFtypeDOUBLE) {
             double *pto = (double *)pwaveformRecord->bptr;
-                double low,high,diff;
-                low = (double)rawLow; high = (double)rawHigh; diff = high - low;
-                for(ind=0; ind<ndata; ind++)
-                    *pto++ = ((double)(*pfrom++) -low)/diff;
+            double low,high,diff;
+            low = (double)rawLow; high = (double)rawHigh; diff = high - low;
+            for(ind=0; ind<ndata; ind++)
+                *pto++ = ((double)(*pfrom++) -low)/diff;
         } else {
             recGblRecordError(S_db_badField,(void *)precord,
-                "devGtr FTVL must be SHORT or FLOAT or DOUBLE");
+                "devGtr FTVL must be SHORT, LONG, FLOAT or DOUBLE");
             pwaveformRecord->pact = 1;
         }
     }

@@ -439,7 +439,7 @@ typedef struct gtrops {
     /*papgtrchannel is nchannels array of pointers to gtrchannel*/
     gtrStatus (*readMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
     gtrStatus (*readRawMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
-    gtrStatus (*getLimits)(gtrPvt pvt, epicsInt16 *rawLow,epicsInt16 *rawHigh);
+    gtrStatus (*getLimits)(gtrPvt pvt, epicsInt32 *rawLow,epicsInt32 *rawHigh);
     gtrStatus (*registerHandler)(gtrPvt pvt,gtrhandler usrIH,void *handlerPvt);
     int       (*numberChannels)(gtrPvt pvt);
     int       (*numberRawChannels)(gtrPvt pvt);
@@ -731,7 +731,7 @@ style="font-family: courier">sisfadcConfig(card,clockspeed,a32offset,intVec,intL
     arrives, and additional numberPTS signals are accepted. The sisadc then
     advances the event counter, starts sampling into the new event memory,
     etc. After all triggers have been processed, data is read from the
-    sisfac. All elements of each event memory are read.</p>
+    sisfadc. All elements of each event memory are read.</p>
   </li>
   <li>FP gate - An external trigger was input to the front panel start input.
     <p>When postTrigger is selected data collection begins when the trigger
@@ -743,7 +743,9 @@ style="font-family: courier">sisfadcConfig(card,clockspeed,a32offset,intVec,intL
 
 <p>If the one wire ID register option is present the TR name is formed by
 appending the clock speed and serial number to the base device (e.g.
-sis3301-80 SN 1478).</p>
+sis3301-80 SN 1478). If the waveform record FTVL field is LONG the number of
+channels is reduced to 4 (channels 0, 2, 4 and 6) and the samples are the raw
+values.</p>
 
 <h2>Implementing a TR specific driver</h2>
 
@@ -836,13 +838,12 @@ sis3301-80 SN 1478).</p>
         below for details.</td>
     </tr>
     <tr>
-      <td>readRawMemory</td>
-      <td>Read the data collected during the last data acquisition cycle and
-        store in device-dependent raw format. See below for details.</td>
-    </tr>
-    <tr>
       <td>getLimits</td>
-      <td>Get the raw limits for the adc readings.</td>
+      <td>Get the raw limits for the adc readings. If the waveform record
+        FTVL is FLOAT these limits will be used to scale the 16-bit value
+        read from the recorder to a range of 0.0 to 1.0 unless the low and
+        high limits are set to the same value, in which case the readMemory()
+        routine must fill in the epicsFloat32 values itself.</td>
     </tr>
     <tr>
       <td>registerHandler</td>
@@ -853,11 +854,6 @@ sis3301-80 SN 1478).</p>
     <tr>
       <td>numberChannels</td>
       <td>Returns the number of channels that the TR provides.</td>
-    </tr>
-    <tr>
-      <td>numberRawChannels</td>
-      <td>Returns the number of channels that the TR provides in its
-        device-dependent raw format.</td>
     </tr>
     <tr>
       <td>clockChoices</td>
@@ -957,12 +953,12 @@ has the following definition:</p>
     style="font-family: courier">pdata</span> to zero.</li>
 </ul>
 
-<p>When the readMemory or readRawMemory method is called it expected to put
-data into the array specified by pdata and set ndata equal to the number of
-elements it put into pdata. It must not overrun the array, i.e. it must not
-put more than len elements into the array. It must honor the numberPTS and
-numberPPS fields. It may check the ftvl field to ensure that the receiver is
-of the correct data type.</p>
+<p>When the readMemory method is called it expected to put data into the
+array specified by pdata and set ndata equal to the number of elements it put
+into pdata. It must not overrun the array, i.e. it must not put more than len
+elements into the array. It must honor the numberPTS and numberPPS fields. It
+may check the ftvl field to ensure that the receiver is of the correct data
+type or modify the format of data copied from the recorder..</p>
 
 <h2>License Agreement</h2>
 <pre>Copyright (c) 2002 University of Chicago. All rights reserved.

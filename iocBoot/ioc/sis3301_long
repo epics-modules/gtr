@@ -1,0 +1,6 @@
+dbLoadRecords("../../db/gtr.db","name=sis3301,card=5")
+dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=0,card=5,size=4000,type=LONG")
+dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=2,card=5,size=4000,type=LONG")
+dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=4,card=5,size=4000,type=LONG")
+dbLoadRecords("../../db/gtrwaveform.db","name=sis3301,signal=6,card=5,size=4000,type=LONG")
+sisfadcConfig(5,80,0xA1000000,0x88,3,0)

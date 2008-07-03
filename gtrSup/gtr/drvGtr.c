@@ -175,18 +175,7 @@ STATIC gtrStatus gtrreadMemory(gtrPvt pvt, gtrchannel **papgtrchannel)
     }
 }
 
-STATIC gtrStatus gtrreadRawMemory(gtrPvt pvt, gtrchannel **papgtrchannel)
-{
-    gtrInfo *pgtrInfo = (gtrInfo *)pvt;
-    
-    if(pgtrInfo->pgtrdrvops->readRawMemory) {
-        return (*pgtrInfo->pgtrdrvops->readRawMemory)(pgtrInfo->drvPvt,papgtrchannel);
-    } else {
-        return(gtrStatusError);
-    }
-}
-
-STATIC gtrStatus gtrgetLimits(gtrPvt pvt, epicsInt16 *rawLow,epicsInt16 *rawHigh)
+STATIC gtrStatus gtrgetLimits(gtrPvt pvt, epicsInt32 *rawLow,epicsInt32 *rawHigh)
 {
     gtrInfo *pgtrInfo = (gtrInfo *)pvt;
     
@@ -194,6 +183,7 @@ STATIC gtrStatus gtrgetLimits(gtrPvt pvt, epicsInt16 *rawLow,epicsInt16 *rawHigh
         return (*pgtrInfo->pgtrdrvops->getLimits)(
             pgtrInfo->drvPvt,rawLow,rawHigh);
     } else {
+	*rawLow = *rawHigh = 0;
         return(gtrStatusError);
     }
 }
@@ -216,17 +206,6 @@ STATIC int gtrnumberChannels(gtrPvt pvt)
     
     if(pgtrInfo->pgtrdrvops->numberChannels) {
         return (*pgtrInfo->pgtrdrvops->numberChannels)(pgtrInfo->drvPvt);
-    } else {
-        return(0);
-    }
-}
-
-STATIC int gtrnumberRawChannels(gtrPvt pvt)
-{
-    gtrInfo *pgtrInfo = (gtrInfo *)pvt;
-    
-    if(pgtrInfo->pgtrdrvops->numberRawChannels) {
-        return (*pgtrInfo->pgtrdrvops->numberRawChannels)(pgtrInfo->drvPvt);
     } else {
         return(0);
     }
@@ -350,11 +329,9 @@ gtrnumberPTE,
 gtrarm,
 gtrsoftTrigger,
 gtrreadMemory,
-gtrreadRawMemory,
 gtrgetLimits,
 gtrregisterHandler,
 gtrnumberChannels,
-gtrnumberRawChannels,
 gtrclockChoices,
 gtrarmChoices,
 gtrtriggerChoices,

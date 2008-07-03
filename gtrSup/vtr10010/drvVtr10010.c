@@ -428,7 +428,7 @@ STATIC gtrStatus vtrreadMemory(gtrPvt pvt,gtrchannel **papgtrchannel)
     return(gtrStatusOK);
 }
 
-STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt16 *rawLow,epicsInt16 *rawHigh)
+STATIC gtrStatus vtrgetLimits(gtrPvt pvt,epicsInt32 *rawLow,epicsInt32 *rawHigh)
 {
     *rawLow = 0;
     *rawHigh = 1024;
@@ -485,11 +485,9 @@ vtrnumberPTE,
 vtrarm,
 vtrsoftTrigger,
 vtrreadMemory,
-0, /* readRawMemory */
 vtrgetLimits,
 vtrregisterHandler,
 vtrnumberChannels,
-0, /* numberRawChannels */
 vtrclockChoices,
 vtrarmChoices,
 vtrtriggerChoices,
