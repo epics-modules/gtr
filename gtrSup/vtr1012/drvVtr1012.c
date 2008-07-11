@@ -514,11 +514,9 @@ vtrnumberPTE,
 vtrarm,
 vtrsoftTrigger,
 vtrreadMemory,
-0, /* readRawMemory */
 vtrgetLimits,
 vtrregisterHandler,
 vtrnumberChannels,
-0, /* numberRawChannels */
 vtrclockChoices,
 vtrarmChoices,
 vtrtriggerChoices,
