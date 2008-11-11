@@ -373,10 +373,8 @@ field(FTVL,"&lt;type&gt;")</pre>
   <li>card is the card (link) number of the recorder</li>
   <li>signal is the input. TRs often use the name channel and number them
     starting with channel 1. Signal is just (channel -1).</li>
-  <li>readData can be readRawData for transient recorders which support
-    faster readout of data is some sort of 'raw' format</li>
   <li>size is the number of elements to allocate for the array</li>
-  <li>type can be SHORT, FLOAT, or DOUBLE. Note that using type FLOAT or
+  <li>type can be SHORT, LONG, FLOAT, or DOUBLE. Note that using type FLOAT or
     DOUBLE can cause extra storage to be allocated. Also Channel Access may
     limit the size of arrays that can be sent to clients. type can be LONG
     for reading raw data.</li>
@@ -438,11 +436,9 @@ typedef struct gtrops {
     gtrStatus (*softTrigger)(gtrPvt pvt);
     /*papgtrchannel is nchannels array of pointers to gtrchannel*/
     gtrStatus (*readMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
-    gtrStatus (*readRawMemory)(gtrPvt pvt, gtrchannel **papgtrchannel);
-    gtrStatus (*getLimits)(gtrPvt pvt, epicsInt32 *rawLow,epicsInt32 *rawHigh);
+    gtrStatus (*getLimits)(gtrPvt pvt, epicsInt32 *low,epicsInt32 *high);
     gtrStatus (*registerHandler)(gtrPvt pvt,gtrhandler usrIH,void *handlerPvt);
     int       (*numberChannels)(gtrPvt pvt);
-    int       (*numberRawChannels)(gtrPvt pvt);
     gtrStatus (*clockChoices)(gtrPvt pvt,int *number,char ***choice);
     gtrStatus (*armChoices)(gtrPvt pvt,int *number,char ***choice);
     gtrStatus (*triggerChoices)(gtrPvt pvt,int *number,char ***choice);
@@ -944,8 +940,7 @@ has the following definition:</p>
   <li>Allocating an array of <span
     style="font-family: courier">gtrchannel</span>s. The number of elements
     in the array is determined by calling the <span
-    style="font-family: courier">numberChannels</span> or <span
-    style="font-family: courier">numberRawChannels</span> method.</li>
+    style="font-family: courier">numberChannels</span> method.</li>
   <li>For each <span style="font-family: courier">gtrchannel</span> setting
     <span style="font-family: courier">len</span> and <span
     style="font-family: courier">pdata</span>. It is permissible to set <span
